@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+
+  <title>Tecnomed — Relatório de Manutenção</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <!-- Bootstrap LOCAL -->
+  <link rel="stylesheet" href="libs/bootstrap.min.css">
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="style.css?v=3">
+
+  <!-- jsPDF LOCAL -->
+  <script src="libs/jspdf.umd.min.js"></script>
+</head>
+
+<body>
+
+  <div id="loadingOverlay">
+    <div class="spinner-border text-light" style="width:5rem;height:5rem;"></div>
+  </div>
+
+  <div class="card">
+    <h1 class="text-center header-title">TECNOMED – Relatório de Manutenção</h1>
+    <div class="text-center mb-4"><span class="report-number">Relatório Nº <span id="numRel">0001</span></span></div>
+
+    <form id="formRel">
+      <div class="row g-3">
+
+        <div class="col-12">
+          <label>Nome do Cliente *</label>
+          <input id="nomeCliente" required>
+        </div>
+
+        <div class="col-md-6">
+          <label>Telefone</label>
+          <input id="telefone">
+        </div>
+
+        <div class="col-md-6">
+          <label>Email *</label>
+          <input id="emailCliente" type="email" required>
+        </div>
+
+        <div class="col-md-6">
+          <label>Responsável *</label>
+          <input id="responsavel" required>
+        </div>
+
+        <div class="col-md-6">
+          <label>Solicitante</label>
+          <input id="solicitante">
+        </div>
+
+        <div class="col-12">
+          <label>Equipamento</label>
+          <input id="equipamento">
+        </div>
+
+        <div class="col-md-8">
+          <label>Endereço</label>
+          <input id="endereco">
+        </div>
+
+        <div class="col-md-3">
+          <label>Cidade</label>
+          <input id="cidade">
+        </div>
+
+        <div class="col-md-1">
+          <label>UF</label>
+          <input id="estado" maxlength="2">
+        </div>
+
+        <div class="col-12">
+          <label>Descrição do Defeito *</label>
+          <textarea id="defeito" required></textarea>
+        </div>
+
+        <div class="col-md-4">
+          <label>Tipo de Serviço *</label>
+          <select id="tipoServico" required>
+            <option>Preventiva</option>
+            <option>Corretiva</option>
+          </select>
+        </div>
+
+        <div class="col-12">
+          <label>Serviço Executado *</label>
+          <textarea id="descricao" required></textarea>
+        </div>
+
+        <div class="col-md-4">
+          <label>Data *</label>
+          <input id="dataInicio" type="date" required>
+        </div>
+
+        <div class="col-md-4">
+          <label>Hora Início *</label>
+          <input id="horaInicio" type="time" required>
+        </div>
+
+        <div class="col-md-4">
+          <label>Hora Término *</label>
+          <input id="horaFim" type="time" required>
+        </div>
+
+        <div class="col-md-6">
+          <label>Técnico *</label>
+          <input id="techName" required>
+        </div>
+
+        <div class="col-md-6">
+          <label>Materiais Utilizados</label>
+          <textarea id="materiais"></textarea>
+        </div>
+
+        <div class="col-12">
+          <label>Observações</label>
+          <textarea id="observacoes"></textarea>
+        </div>
+
+        <div class="col-12">
+          <label>Fotos</label>
+          <input type="file" id="fotos" class="form-control" multiple accept="image/*">
+          <div id="fotosPreview" class="fotos-preview mt-2"></div>
+        </div>
+
+        <div class="col-12">
+          <label>Assinatura do Cliente *</label>
+          <div class="sig-area">
+            <canvas id="sigCanvas" class="sig-canvas"></canvas>
+            <div id="sigInfo" class="sig-info">Toque e arraste para assinar</div>
+          </div>
+        </div>
+
+        <div class="col-12 actions">
+          <button type="button" id="btnLimpar" class="btn btn-outline-danger">Limpar</button>
+          <button type="button" id="btnPDF" class="btn btn-primary">Ver PDF</button>
+          <button type="button" id="btnWhatsapp" class="btn btn-success"
+            style="background: #25D366; border:none;">WhatsApp</button>
+          <button type="button" id="btnEnviar" class="btn btn-success">Finalizar</button>
+        </div>
+
+      </div>
+    </form>
+
+    <div id="alertContainer" class="mt-3"></div>
+  </div>
+
+  <script>
+    /* ================= CONFIG ================= */
+    const host = window.location.protocol.startsWith("http") ? window.location.hostname : "localhost";
+    const SERVER_URL = `http://${host}:3000/upload`;
+    const COUNTER_URL = `http://${host}:3000/counter`;
+
+    /* ================= CONTADOR ================= */
+    let contador = null; // Começa nulo, só pega valor real ao gerar
+    let numeroReservado = false; // Flag para saber se já reservamos o número nesta sessão
+
+    async function carregarContadorOffline() {
+      // Tenta pegar o último conhecido apenas para exibir algo, sem incrementar
+      try {
+        const res = await fetch(COUNTER_URL); // GET = Read Only
+        if (res.ok) {
+          const data = await res.json();
+          // Exibe o PROXIMO número provável (atual + 1), mas não salva na variavel 'contador' oficial ainda
+          document.getElementById("numRel").innerText = String(data.value + 1).padStart(4, "0");
+        }
+      } catch (e) {
+        console.warn("Offline ou erro ao ler contador:", e);
+        const last = localStorage.getItem("contadorRel") || 0;
+        document.getElementById("numRel").innerText = String(Number(last) + 1).padStart(4, "0");
+      }
+    }
+    carregarContadorOffline();
+
+    // Função para garantir que temos um número reservado
+    async function garantirNumero() {
+      if (numeroReservado && contador) return contador;
+
+      try {
+        const res = await fetch(COUNTER_URL + '/increment', { method: 'POST' });
+        const data = await res.json();
+        contador = data.value;
+        numeroReservado = true;
+
+        // Atualiza UI e Storage
+        document.getElementById("numRel").innerText = String(contador).padStart(4, "0");
+        localStorage.setItem("contadorRel", contador);
+        return contador;
+      } catch (e) {
+        alert("Erro ao gerar número do relatório. Verifique sua conexão.");
+        throw e;
+      }
+    }
+
+    if (!document.getElementById("dataInicio").value) {
+      document.getElementById("dataInicio").value = new Date().toISOString().split("T")[0];
+    }
+
+    /* ================= ASSINATURA ================= */
+    const canvas = document.getElementById("sigCanvas");
+    const ctx = canvas.getContext("2d");
+    const sigInfo = document.getElementById("sigInfo");
+    let desenhando = false;
+    let temAssinatura = false;
+
+    function ajustarCanvas() {
+      const r = canvas.getBoundingClientRect();
+      canvas.width = r.width;
+      canvas.height = r.height;
+      ctx.lineWidth = 3;
+      ctx.lineCap = "round";
+    }
+    ajustarCanvas();
+    window.addEventListener("resize", ajustarCanvas);
+
+    function getPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      return {
+        x: clientX - rect.left,
+        y: clientY - rect.top
+      };
+    }
+
+    function startDraw(e) {
+      if (e.target !== canvas) return;
+      e.preventDefault();
+      desenhando = true;
+      const pos = getPos(e);
+      ctx.beginPath();
+      ctx.moveTo(pos.x, pos.y);
+      temAssinatura = true;
+      sigInfo.textContent = "Assinatura registrada";
+      sigInfo.classList.add("signed");
+    }
+
+    function moveDraw(e) {
+      if (!desenhando) return;
+      e.preventDefault();
+      const pos = getPos(e);
+      ctx.lineTo(pos.x, pos.y);
+      ctx.stroke();
+    }
+
+    function endDraw() {
+      desenhando = false;
+    }
+
+    canvas.addEventListener("touchstart", startDraw, { passive: false });
+    canvas.addEventListener("mousedown", startDraw);
+    canvas.addEventListener("touchmove", moveDraw, { passive: false });
+    canvas.addEventListener("mousemove", moveDraw);
+    canvas.addEventListener("touchend", endDraw);
+    canvas.addEventListener("mouseup", endDraw);
+    canvas.addEventListener("mouseout", endDraw);
+
+    document.getElementById("btnLimpar").onclick = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      temAssinatura = false;
+      sigInfo.textContent = "Toque e arraste para assinar";
+      sigInfo.classList.remove("signed");
+    };
+
+    /* ================= PREVIEW FOTOS ================= */
+    const fotosInput = document.getElementById("fotos");
+    const fotosPreview = document.getElementById("fotosPreview");
+
+    fotosInput.addEventListener("change", function () {
+      fotosPreview.innerHTML = "";
+      if (this.files) {
+        Array.from(this.files).forEach(file => {
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            const img = document.createElement("img");
+            img.src = e.target.result;
+            fotosPreview.appendChild(img);
+          }
+          reader.readAsDataURL(file);
+        });
+      }
+    });
+
+    /* ================= PDF ================= */
+    async function gerarPDF() {
+      // Garante número antes de gerar
+      if (!numeroReservado) {
+        await garantirNumero();
+      }
+
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF();
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+
+      // --- WATERMARK ---
+      pdf.saveGraphicsState();
+      pdf.setGState(new pdf.GState({ opacity: 0.15 }));
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(60);
+      pdf.setTextColor(13, 110, 253);
+      pdf.text("TECNOMED", pageWidth / 2, pageHeight / 2, { align: "center", angle: 45 });
+      pdf.restoreGraphicsState();
+
+      // --- HEADER ---
+      pdf.setTextColor(0, 0, 0); // Preto
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(18);
+      pdf.text("TECNOMED", 105, 15, { align: "center" });
+
+      pdf.setFontSize(14);
+      pdf.setFont("helvetica", "normal");
+      pdf.text("Relatório de Manutenção", 105, 22, { align: "center" });
+
+      pdf.setFontSize(12);
+      // Usa o 'contador' que já foi garantido
+      pdf.text("Nº: " + String(contador).padStart(4, "0"), 190, 22, { align: "right" });
+
+      pdf.setLineWidth(0.5);
+      pdf.line(10, 28, 200, 28);
+
+      let y = 35;
+      const margin = 15;
+      const colGap = 10;
+      const colWidth = (pageWidth - (margin * 2) - colGap) / 2;
+
+      function drawField(label, value, x, y, w) {
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(10);
+        pdf.text(label, x, y);
+        pdf.setFont("helvetica", "normal");
+        const splitVal = pdf.splitTextToSize(value || "-", w);
+        pdf.text(splitVal, x, y + 5);
+        return (splitVal.length * 5) + 5;
+      }
+
+      // --- DADOS DO CLIENTE (COLUNA 1) ---
+      let yCol1 = y;
+      pdf.setFontSize(12);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("DADOS DO CLIENTE", margin, yCol1);
+      yCol1 += 8;
+
+      yCol1 += drawField("Cliente:", document.getElementById("nomeCliente").value, margin, yCol1, colWidth) + 2;
+      yCol1 += drawField("Email:", document.getElementById("emailCliente").value, margin, yCol1, colWidth) + 2;
+      yCol1 += drawField("Telefone:", document.getElementById("telefone").value, margin, yCol1, colWidth) + 2;
+      yCol1 += drawField("Endereço:", document.getElementById("endereco").value, margin, yCol1, colWidth) + 2;
+      yCol1 += drawField("Cidade/UF:", `${document.getElementById("cidade").value} / ${document.getElementById("estado").value}`, margin, yCol1, colWidth) + 2;
+
+      // --- DADOS DO SERVIÇO (COLUNA 2) ---
+      let yCol2 = y;
+      const xCol2 = margin + colWidth + colGap;
+      pdf.setFontSize(12);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("DADOS DO SERVIÇO", xCol2, yCol2);
+      yCol2 += 8;
+
+      yCol2 += drawField("Equipamento:", document.getElementById("equipamento").value, xCol2, yCol2, colWidth) + 2;
+      yCol2 += drawField("Tipo de Serviço:", document.getElementById("tipoServico").value, xCol2, yCol2, colWidth) + 2;
+      yCol2 += drawField("Solicitante:", document.getElementById("solicitante").value, xCol2, yCol2, colWidth) + 2;
+      yCol2 += drawField("Responsável:", document.getElementById("responsavel").value, xCol2, yCol2, colWidth) + 2;
+      yCol2 += drawField("Data/Hora:", `${document.getElementById("dataInicio").value} (${document.getElementById("horaInicio").value} - ${document.getElementById("horaFim").value})`, xCol2, yCol2, colWidth) + 2;
+
+      y = Math.max(yCol1, yCol2) + 5;
+      pdf.line(10, y, 200, y);
+      y += 10;
+
+      // --- DESCRIÇÃO ---
+      const fullWidth = pageWidth - (margin * 2);
+      pdf.setFontSize(12);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("DESCRIÇÃO DO DEFEITO", margin, y);
+      y += 8;
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(10);
+      let splitDefeito = pdf.splitTextToSize(document.getElementById("defeito").value, fullWidth);
+      pdf.text(splitDefeito, margin, y);
+      y += (splitDefeito.length * 5) + 10;
+
+      // --- SERVIÇO EXECUTADO ---
+      if (y > 250) { pdf.addPage(); y = 20; }
+      pdf.setFontSize(12);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("SERVIÇO EXECUTADO", margin, y);
+      y += 8;
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(10);
+      let splitDesc = pdf.splitTextToSize(document.getElementById("descricao").value, fullWidth);
+      pdf.text(splitDesc, margin, y);
+      y += (splitDesc.length * 5) + 10;
+
+      // --- MATERIAIS ---
+      if (document.getElementById("materiais").value) {
+        if (y > 250) { pdf.addPage(); y = 20; }
+        pdf.setFontSize(12);
+        pdf.setFont("helvetica", "bold");
+        pdf.text("MATERIAIS UTILIZADOS", margin, y);
+        y += 8;
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(10);
+        let splitMat = pdf.splitTextToSize(document.getElementById("materiais").value, fullWidth);
+        pdf.text(splitMat, margin, y);
+        y += (splitMat.length * 5) + 10;
+      }
+
+      // --- OBS ---
+      if (document.getElementById("observacoes").value) {
+        if (y > 250) { pdf.addPage(); y = 20; }
+        pdf.setFontSize(12);
+        pdf.setFont("helvetica", "bold");
+        pdf.text("OBSERVAÇÕES", margin, y);
+        y += 8;
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(10);
+        let splitObs = pdf.splitTextToSize(document.getElementById("observacoes").value, fullWidth);
+        pdf.text(splitObs, margin, y);
+        y += (splitObs.length * 5) + 10;
+      }
+
+      y += 10;
+
+      // --- RODAPÉ / ASSINATURA ---
+      // Threshold 255 para garantir que não quebre página à toa
+      if (y > 255) { pdf.addPage(); y = 20; }
+
+      pdf.setLineWidth(0.5);
+      pdf.line(margin, y, pageWidth - margin, y);
+      y += 10;
+
+      pdf.setFont("helvetica", "bold");
+      pdf.text("Técnico Responsável:", margin, y);
+      pdf.setFont("helvetica", "normal");
+      pdf.text(document.getElementById("techName").value, margin, y + 6);
+
+      if (temAssinatura) {
+        try {
+          const imgData = canvas.toDataURL("image/png");
+          pdf.text("Assinatura do Cliente:", 120, y);
+          pdf.addImage(imgData, 'PNG', 120, y + 2, 60, 30);
+        } catch (e) {
+          console.error("Erro ao add assinatura", e);
+        }
+      }
+
+      return pdf.output("blob");
+    }
+
+    /* ================= AÇÕES ================= */
+
+    // VER PDF
+    document.getElementById("btnPDF").onclick = async () => {
+      try {
+        const blob = await gerarPDF();
+        window.open(URL.createObjectURL(blob));
+      } catch (e) {
+        console.error(e);
+      }
+    };
+
+    // WHATSAPP
+    document.getElementById("btnWhatsapp").onclick = async () => {
+      if (!temAssinatura) {
+        alert("Por favor, assine antes de compartilhar.");
+        return;
+      }
+
+      const loading = document.getElementById("loadingOverlay");
+      loading.classList.add("show");
+
+      try {
+        const blob = await gerarPDF();
+        const file = new File([blob], `Relatorio_${contador}.pdf`, { type: "application/pdf" });
+
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: 'Relatório Tecnomed',
+            text: `Segue relatório de manutenção Nº ${contador}.`
+          });
+        } else {
+          alert("Seu navegador não suporta compartilhamento direto de arquivos.\nO PDF será baixado para você enviar manualmente.");
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = `Relatorio_${contador}.pdf`;
+          a.click();
+        }
+      } catch (err) {
+        console.error("Erro ao compartilhar:", err);
+        // Não alerta se for AbortError (usuario cancelou)
+        if (err.name !== 'AbortError') alert("Erro ao compartilhar: " + err.message);
+      } finally {
+        loading.classList.remove("show");
+      }
+    };
+
+    // EMAIL
+    document.getElementById("btnEnviar").onclick = async () => {
+      if (!document.getElementById("formRel").checkValidity()) {
+        document.getElementById("formRel").reportValidity();
+        return;
+      }
+      if (!temAssinatura) {
+        alert("Assinatura obrigatória");
+        return;
+      }
+
+      if (!navigator.onLine) {
+        alert("Você está OFFLINE.\nO PDF será gerado, mas o email NÃO será enviado.");
+        const blob = await gerarPDF();
+        window.open(URL.createObjectURL(blob));
+        return;
+      }
+
+      const loading = document.getElementById("loadingOverlay");
+      loading.classList.add("show");
+
+      try {
+        const formData = new FormData();
+        const inputs = document.querySelectorAll("input, textarea, select");
+        inputs.forEach(el => {
+          if (el.id && el.id !== "fotos") {
+            formData.append(el.id, el.value);
+          }
+        });
+
+        // 1. Gera PDF (já com número incrementado dentro de gerarPDF)
+        const pdfBlob = await gerarPDF();
+        formData.append("relatorio", pdfBlob, "Relatorio.pdf");
+
+        // Assinatura removida do envio separado (já vai no PDF)
+
+        // 3. Fotos
+        const fotos = document.getElementById("fotos").files;
+        for (let i = 0; i < fotos.length; i++) {
+          formData.append("fotos", fotos[i]);
+        }
+
+        const response = await fetch(SERVER_URL, {
+          method: "POST",
+          body: formData
+        });
+
+        const text = await response.text();
+        if (!response.ok) throw new Error("Server Error " + response.status + ": " + text);
+
+        alert("Sucesso! Relatório enviado por Email.");
+        // Reload para novo relatório (novo número será pego no próximo load)
+        location.reload();
+
+      } catch (err) {
+        console.error(err);
+        alert("ERRO AO ENVIAR:\n" + err.message);
+      } finally {
+        loading.classList.remove("show");
+      }
+    };
+
+    /* ================= SERVICE WORKER (OFFLINE) ================= */
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("service-worker.js")
+          .then(reg => console.log("Service Worker registrado!", reg))
+          .catch(err => console.error("Falha ao registrar SW:", err));
+      });
+    }
+
+  </script>
+
+</body>
+
+</html>

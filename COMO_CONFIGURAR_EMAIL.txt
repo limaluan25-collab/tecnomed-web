@@ -1,0 +1,32 @@
+PASSO A PASSO PARA CONFIGURAR O ENVIO DE EMAIL (GMAIL)
+
+1. Você precisa de uma Senha de Aplicativo (App Password) do Google. Sua senha normal NÃO vai funcionar.
+
+COMO GERAR A SENHA DE APLICATIVO:
+1. Acesse sua conta Google m)(myaccount.google.com.
+2. Vá em "Segurança".
+3. Ative a "Verificação em duas etapas" (se não estiver ativa).
+4. Procure por "Senhas de app" (pode usar a barra de busca no topo).
+5. Crie uma nova senha (dê o nome "Tecnomed", por exemplo).
+6. O Google vai te dar uma senha de 16 letras. COPIE ESSA SENHA.
+
+CONFIGURAR NO CÓDIGO:
+1. Abra o arquivo "server.js" na pasta tecnomed-web.
+2. Procure as linhas 28 a 35 (Configuração do Nodemailer).
+3. Onde está escrito 'seu_email@gmail.com', apague e coloque O SEU EMAIL REAL.
+4. Onde está escrito 'sua_senha_de_app', apague e coloque A SENHA DE 16 LETRAS que você copiou.
+
+Exemplo de como deve ficar:
+
+    auth: {
+        user: 'joao.tecnico@gmail.com',
+        pass: 'abcd efgh ijkl mnop'
+    }
+
+5. Salve o arquivo (Ctrl + S).
+6. Reinicie o servidor:
+   - No terminal, aperte Ctrl + C para parar.
+   - Digite: node server.js
+   - Aperte Enter.
+
+7. Tente enviar o relatório novamente pelo site.
