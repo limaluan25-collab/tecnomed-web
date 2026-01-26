@@ -9,7 +9,6 @@ const PORT = process.env.PORT || 3000;
 
 // Configuração do CORS
 app.use(cors());
-app.use(express.static('.')); // Serve arquivos estáticos (index.html, style.css)
 app.use(express.json());
 
 // --- CONFIGURAÇÃO SERVERLESS (Vercel) ---
