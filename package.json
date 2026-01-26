@@ -2,7 +2,7 @@
     "name": "tecnomed-server",
     "version": "1.0.0",
     "description": "Servidor backend simples para uploads do Tecnomed",
-    "main": "server.js",
+    "main": "api/index.js",
     "scripts": {
         "start": "node api/index.js"
     },
