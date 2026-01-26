@@ -3,7 +3,8 @@
     "version": "1.0.0",
     "description": "Servidor backend simples para uploads do Tecnomed",
     "scripts": {
-        "dev": "node api/index.js"
+        "dev": "node api/index.js",
+        "build": "echo 'No build step'"
     },
     "dependencies": {
         "cors": "^2.8.5",
