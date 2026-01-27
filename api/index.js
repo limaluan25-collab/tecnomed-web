@@ -37,19 +37,16 @@ const transporter = nodemailer.createTransport({
 // Mantivemos a lógica original, mas sabendo dessa limitação em serverless.
 let currentCount = 1;
 
-app.get('/counter', (req, res) => {
-    // Retorna o valor atual
-    res.json({ value: currentCount });
+// --- CONTADOR REMOVIDO EM FAVOR DE ID DATA/HORA ---
+// O Frontend agora gera o ID único baseado no timestamp.
+
+app.get('/api/counter', (req, res) => {
+    res.json({ status: 'ok' });
 });
 
-app.post('/counter/increment', (req, res) => {
-    currentCount++;
-    res.json({ value: currentCount });
-});
-
-
-// Endpoint para receber o relatório e enviar email
-app.post('/upload', upload.fields([
+// Endpoint correto para a API na Vercel
+// A rota precisa ser '/api/upload' para bater com o rewrite ou a estrutura de pastas
+app.post('/api/upload', upload.fields([
     { name: 'assinatura', maxCount: 1 },
     { name: 'fotos', maxCount: 10 },
     { name: 'relatorio', maxCount: 1 }

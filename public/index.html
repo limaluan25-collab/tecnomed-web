@@ -157,49 +157,33 @@
 
   <script>
     /* ================= CONFIG ================= */
-    const host = window.location.protocol.startsWith("http") ? window.location.hostname : "localhost";
-    const SERVER_URL = `http://${host}:3000/upload`;
-    const COUNTER_URL = `http://${host}:3000/counter`;
+    // Usa caminho relativo para funcionar tanto local quanto na Vercel
+    const SERVER_URL = `/api/upload`;
+    const COUNTER_URL = `/api/counter`;
 
     /* ================= CONTADOR ================= */
     let contador = null; // Começa nulo, só pega valor real ao gerar
     let numeroReservado = false; // Flag para saber se já reservamos o número nesta sessão
 
     async function carregarContadorOffline() {
-      // Tenta pegar o último conhecido apenas para exibir algo, sem incrementar
-      try {
-        const res = await fetch(COUNTER_URL); // GET = Read Only
-        if (res.ok) {
-          const data = await res.json();
-          // Exibe o PROXIMO número provável (atual + 1), mas não salva na variavel 'contador' oficial ainda
-          document.getElementById("numRel").innerText = String(data.value + 1).padStart(4, "0");
-        }
-      } catch (e) {
-        console.warn("Offline ou erro ao ler contador:", e);
-        const last = localStorage.getItem("contadorRel") || 0;
-        document.getElementById("numRel").innerText = String(Number(last) + 1).padStart(4, "0");
-      }
+      // Gera ID baseado em Data/Hora (Ex: 20260126-1530)
+      const now = new Date();
+      const id = now.getFullYear().toString() +
+        (now.getMonth() + 1).toString().padStart(2, '0') +
+        now.getDate().toString().padStart(2, '0') + "-" +
+        now.getHours().toString().padStart(2, '0') +
+        now.getMinutes().toString().padStart(2, '0');
+
+      document.getElementById("numRel").innerText = id;
+      contador = id;
+      numeroReservado = true; // Data/Hora já é única
     }
     carregarContadorOffline();
 
-    // Função para garantir que temos um número reservado
+    // Função Simplificada (já gera no load)
     async function garantirNumero() {
-      if (numeroReservado && contador) return contador;
-
-      try {
-        const res = await fetch(COUNTER_URL + '/increment', { method: 'POST' });
-        const data = await res.json();
-        contador = data.value;
-        numeroReservado = true;
-
-        // Atualiza UI e Storage
-        document.getElementById("numRel").innerText = String(contador).padStart(4, "0");
-        localStorage.setItem("contadorRel", contador);
-        return contador;
-      } catch (e) {
-        alert("Erro ao gerar número do relatório. Verifique sua conexão.");
-        throw e;
-      }
+      if (!contador) carregarContadorOffline();
+      return contador;
     }
 
     if (!document.getElementById("dataInicio").value) {
@@ -323,8 +307,8 @@
       pdf.text("Relatório de Manutenção", 105, 22, { align: "center" });
 
       pdf.setFontSize(12);
-      // Usa o 'contador' que já foi garantido
-      pdf.text("Nº: " + String(contador).padStart(4, "0"), 190, 22, { align: "right" });
+      // Usa o 'contador' (Data/Hora)
+      pdf.text("Nº: " + String(contador), 190, 22, { align: "right" });
 
       pdf.setLineWidth(0.5);
       pdf.line(10, 28, 200, 28);
