@@ -21,14 +21,18 @@ const upload = multer({
 });
 
 // Configuração do Nodemailer
+console.log('--- DEBUG EMAIL CONFIG ---');
+console.log('User:', process.env.EMAIL_USER ? 'Definido' : 'Faltando');
+console.log('Pass:', process.env.EMAIL_PASS ? 'Definido' : 'Faltando');
+
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
     },
-    debug: false,
-    logger: false
+    debug: true, // Ativa logs detalhados do Nodemailer
+    logger: true
 });
 
 // --- CONTADOR (Simples em Memória/Arquivo) ---
