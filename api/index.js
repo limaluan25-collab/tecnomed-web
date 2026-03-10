@@ -63,8 +63,8 @@ app.post('/api/upload', upload.fields([
         }
 
         const mailOptions = {
-            from: `"Tecnomed Assistência Técnica" <${process.env.EMAIL_USER}>`,
-            to: [process.env.EMAIL_USER, emailCliente].filter(Boolean),
+            from: `"Tecnomed Assistência Técnica" <tecnomed.se@gmail.com>`,
+            to: ['tecnomed.se@gmail.com', emailCliente].filter(Boolean),
             subject: `Relatório de Manutenção - ${cliente}`,
             text: `Olá, segue em anexo o relatório de manutenção do equipamento para o cliente ${cliente}.\n\nEste é um e-mail automático enviado pelo sistema Tecnomed Web.`,
             attachments: attachments

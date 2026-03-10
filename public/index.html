@@ -358,7 +358,7 @@
         pdf.text(labelText, xOffset, y);
 
         pdf.setFont("helvetica", "normal");
-        const labelWidth = pdf.getTextWidth(labelText);
+        const labelWidth = pdf.getTextWidth(labelText) + 2;
         const valStr = String(value || "-");
         const splitVal = pdf.splitTextToSize(valStr, width - labelWidth);
 
