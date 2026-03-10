@@ -1,254 +1,165 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Tecnomed — Relatório de Manutenção Odontológica</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
 
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <title>Tecnomed — Relatório de Manutenção</title>
 
-  <style>
-    :root {
-      --primary: #0056b3;
-      --secondary: #6c757d;
-      --success: #28a745;
-      --bg: #f8f9fa;
-      --text: #333;
-    }
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-    body {
-      background-color: var(--bg);
-      color: var(--text);
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      padding: 20px;
-    }
+  <!-- Bootstrap LOCAL -->
+  <link rel="stylesheet" href="libs/bootstrap.min.css">
 
-    .main-card {
-      max-width: 900px;
-      margin: 0 auto;
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-      padding: 30px;
-      border-top: 6px solid var(--primary);
-    }
+  <!-- Custom CSS (Restaurado) -->
+  <link rel="stylesheet" href="style.css?v=4">
 
-    .header-title {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 2px solid #eee;
-      padding-bottom: 15px;
-      margin-bottom: 25px;
-    }
-
-    .header-title h2 {
-      margin: 0;
-      color: var(--primary);
-      font-size: 1.5rem;
-      font-weight: 700;
-    }
-
-    .rel-number {
-      background: var(--primary);
-      color: #fff;
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 0.9rem;
-    }
-
-    label {
-      font-weight: 600;
-      margin-bottom: 5px;
-      display: block;
-      font-size: 0.85rem;
-      color: #555;
-    }
-
-    .form-control,
-    .form-select {
-      border-radius: 8px;
-      border: 1px solid #ddd;
-      padding: 10px 12px;
-      transition: border-color 0.2s;
-    }
-
-    .form-control:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(0, 86, 179, 0.1);
-    }
-
-    .sig-container {
-      background: #fafafa;
-      border: 2px dashed #ddd;
-      border-radius: 8px;
-      margin-top: 10px;
-      position: relative;
-    }
-
-    .sig-canvas {
-      height: 160px;
-      width: 100%;
-      cursor: crosshair;
-      touch-action: none;
-    }
-
-    .btn {
-      padding: 12px 24px;
-      border-radius: 8px;
-      font-weight: 600;
-      text-transform: uppercase;
-      font-size: 0.8rem;
-      letter-spacing: 0.5px;
-    }
-
-    .btn-primary {
-      background: var(--primary);
-      border: none;
-    }
-
-    .btn-success {
-      background: var(--success);
-      border: none;
-    }
-
-    .btn-outline-secondary {
-      color: var(--secondary);
-      border: 1px solid var(--secondary);
-    }
-
-    .actions-bar {
-      display: flex;
-      gap: 12px;
-      margin-top: 30px;
-      padding-top: 20px;
-      border-top: 1px solid #eee;
-    }
-
-    @media (max-width: 600px) {
-      .actions-bar {
-        flex-direction: column;
-      }
-
-      .btn {
-        width: 100%;
-      }
-    }
-  </style>
+  <!-- jsPDF LOCAL -->
+  <script src="libs/jspdf.umd.min.js"></script>
 </head>
 
 <body>
-  <div class="main-card">
 
-    <div class="header-title">
-      <div>
-        <h2>TECNOMED</h2>
-        <small class="text-muted">Assistência Técnica e Manutenção</small>
-      </div>
-      <div class="rel-number">Nº <span id="numRel">0001</span></div>
-    </div>
+  <div id="loadingOverlay">
+    <div class="spinner-border text-light" style="width:5rem;height:5rem;"></div>
+  </div>
+
+  <div class="card">
+    <h1 class="text-center header-title">TECNOMED – Relatório de Manutenção</h1>
+    <div class="text-center mb-4"><span class="report-number">Relatório Nº <span id="numRel">0001</span></span></div>
 
     <form id="formRel">
       <div class="row g-3">
 
+        <div class="col-12">
+          <label>Nome do Cliente *</label>
+          <input id="nomeCliente" required>
+        </div>
+
         <div class="col-md-6">
-          <label>Cliente / Consultório *</label>
-          <input class="form-control" id="nomeCliente" placeholder="Nome completo" required>
-        </div>
-
-        <div class="col-md-3">
           <label>Telefone</label>
-          <input class="form-control" id="telefone" placeholder="(00) 00000-0000">
+          <input id="telefone">
+        </div>
+
+        <div class="col-md-6">
+          <label>Email *</label>
+          <input id="emailCliente" type="email" required>
+        </div>
+
+        <div class="col-md-6">
+          <label>Responsável *</label>
+          <input id="responsavel" required>
+        </div>
+
+        <div class="col-md-6">
+          <label>Solicitante</label>
+          <input id="solicitante">
+        </div>
+
+        <div class="col-12">
+          <label>Equipamento</label>
+          <input id="equipamento">
+        </div>
+
+        <div class="col-md-8">
+          <label>Endereço</label>
+          <input id="endereco">
         </div>
 
         <div class="col-md-3">
-          <label>E-mail do Cliente *</label>
-          <input class="form-control" id="emailCliente" type="email" placeholder="cliente@email.com" required>
+          <label>Cidade</label>
+          <input id="cidade">
         </div>
 
-        <hr class="my-4">
-
-        <div class="col-md-4">
-          <label>Equipamento</label>
-          <input class="form-control" id="equipamento" placeholder="Ex: Autoclave CRISTOFOLI">
+        <div class="col-md-1">
+          <label>UF</label>
+          <input id="estado" maxlength="2">
         </div>
 
-        <div class="col-md-4">
-          <label>Responsável / Solicitante</label>
-          <input class="form-control" id="responsavel" placeholder="Quem solicitou o serviço">
+        <div class="col-12">
+          <label>Descrição do Defeito *</label>
+          <textarea id="defeito" required></textarea>
         </div>
 
         <div class="col-md-4">
-          <label>Tipo de Manutenção</label>
-          <select class="form-select" id="tipoServico">
-            <option value="Corretiva">🔧 Corretiva</option>
-            <option value="Preventiva">🛡️ Preventiva</option>
-            <option value="Instalação">📦 Instalação</option>
+          <label>Tipo de Serviço *</label>
+          <select id="tipoServico" required>
+            <option>Preventiva</option>
+            <option>Corretiva</option>
           </select>
         </div>
 
         <div class="col-12">
-          <label>Defeito Reclamado</label>
-          <textarea class="form-control" id="defeito" rows="2"></textarea>
+          <label>Serviço Executado *</label>
+          <textarea id="descricao" required></textarea>
+        </div>
+
+        <div class="col-md-4">
+          <label>Data *</label>
+          <input id="dataInicio" type="date" required>
+        </div>
+
+        <div class="col-md-4">
+          <label>Hora Início *</label>
+          <input id="horaInicio" type="time" required>
+        </div>
+
+        <div class="col-md-4">
+          <label>Hora Término *</label>
+          <input id="horaFim" type="time" required>
+        </div>
+
+        <div class="col-md-6">
+          <label>Técnico *</label>
+          <input id="techName" required>
+        </div>
+
+        <div class="col-md-6">
+          <label>Materiais Utilizados</label>
+          <textarea id="materiais"></textarea>
         </div>
 
         <div class="col-12">
-          <label>Serviço Executado / Relatório Técnico *</label>
-          <textarea class="form-control" id="descricao" rows="4" placeholder="Descreva os procedimentos realizados..."
-            required></textarea>
+          <label>Observações</label>
+          <textarea id="observacoes"></textarea>
         </div>
 
-        <div class="col-md-12">
-          <label>Peças / Materiais Utilizados</label>
-          <textarea class="form-control" id="materiais" rows="2"></textarea>
+        <div class="col-12">
+          <label>Fotos</label>
+          <input type="file" id="fotos" class="form-control" multiple accept="image/*">
+          <div id="fotosPreview" class="fotos-preview mt-2"></div>
         </div>
 
-        <div class="col-md-4">
-          <label>Data</label>
-          <input class="form-control" id="dataInicio" type="date" required>
-        </div>
-
-        <div class="col-md-4">
-          <label>Horário Início</label>
-          <input class="form-control" id="horaInicio" type="time" required>
-        </div>
-
-        <div class="col-md-4">
-          <label>Horário Término</label>
-          <input class="form-control" id="horaFim" type="time" required>
-        </div>
-
-        <div class="col-md-12">
-          <label>Técnico Responsável</label>
-          <input class="form-control" id="techName" value="Técnico Tecnomed" required>
-        </div>
-
-        <div class="col-12 mt-4">
+        <div class="col-12">
           <label>Assinatura do Cliente *</label>
-          <div class="sig-container">
-            <canvas id="sigCliente" class="sig-canvas"></canvas>
+          <div class="sig-area">
+            <canvas id="sigCanvas" class="sig-canvas"></canvas>
+            <div id="sigInfo" class="sig-info">Toque e arraste para assinar</div>
           </div>
-          <button type="button" id="clearCliente" class="btn btn-link btn-sm text-danger p-0 mt-1">Apagar
-            Assinatura</button>
         </div>
 
-        <div class="actions-bar">
-          <button type="button" id="btnGerarPDF" class="btn btn-outline-secondary">Visualizar PDF</button>
-          <button type="button" id="btnFinalizar" class="btn btn-success flex-grow-1">Finalizar e Enviar por
-            E-mail</button>
+        <div class="col-12 actions">
+          <button type="button" id="btnLimpar" class="btn btn-outline-danger">Limpar</button>
+          <button type="button" id="btnPDF" class="btn btn-primary">Ver PDF</button>
+          <button type="button" id="btnWhatsapp" class="btn btn-success"
+            style="background: #25D366; border:none;">WhatsApp</button>
+          <button type="button" id="btnEnviar" class="btn btn-success">Finalizar</button>
         </div>
 
       </div>
     </form>
+
+    <div id="alertContainer" class="mt-3"></div>
   </div>
 
   <script>
-    // URL alterada para funcionar com a estrutura da Vercel
-    const SERVER_URL = "/api/upload";
+    /* ================= CONFIG ================= */
+    const SERVER_URL = `/api/upload`;
 
-    // Gerar ID baseado em data se não houver contador (padrão tecnomed-web)
+    // Gerar ID baseado em data (PWA style)
     function generateID() {
       const now = new Date();
       return now.getFullYear().toString() +
@@ -265,162 +176,171 @@
       document.getElementById("dataInicio").value = new Date().toISOString().split("T")[0];
     }
 
-    // ---------- CANVAS ----------
-    function makeCanvas(id) {
-      const c = document.getElementById(id);
-      const ctx = c.getContext("2d");
-      const storageKey = `sig_backup_${id}`;
+    /* ================= ASSINATURA (FIXED & PERSISTENT) ================= */
+    const canvas = document.getElementById("sigCanvas");
+    const ctx = canvas.getContext("2d");
+    const sigInfo = document.getElementById("sigInfo");
+    const storageKey = 'sig_backup_main';
+    const ratio = window.devicePixelRatio || 1;
+    let drawing = false;
+    let hasSignature = false;
 
-      const ratio = window.devicePixelRatio || 1;
+    function saveToStorage() {
+      localStorage.setItem(storageKey, canvas.toDataURL());
+    }
 
-      function saveToStorage() {
-        localStorage.setItem(storageKey, c.toDataURL());
-      }
-
-      function loadFromStorage() {
-        const data = localStorage.getItem(storageKey);
-        if (data) {
-          const img = new Image();
-          img.src = data;
-          img.onload = () => {
-            ctx.clearRect(0, 0, c.width, c.height);
-            ctx.drawImage(img, 0, 0, c.offsetWidth, c.offsetHeight);
-          };
-        }
-      }
-
-      function resize() {
-        const data = c.toDataURL();
-        c.width = c.offsetWidth * ratio;
-        c.height = c.offsetHeight * ratio;
-        ctx.scale(ratio, ratio);
-
-        ctx.lineWidth = 2;
-        ctx.lineJoin = "round";
-        ctx.lineCap = "round";
-        ctx.strokeStyle = "#000";
-
+    function loadFromStorage() {
+      const data = localStorage.getItem(storageKey);
+      if (data) {
         const img = new Image();
-        const storedData = localStorage.getItem(storageKey);
-        img.src = data.length > 2000 ? data : (storedData || "");
-        img.onload = () => ctx.drawImage(img, 0, 0, c.offsetWidth, c.offsetHeight);
+        img.src = data;
+        img.onload = () => {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.offsetWidth, canvas.offsetHeight);
+          hasSignature = true;
+          sigInfo.textContent = "Assinatura registrada";
+          sigInfo.classList.add("signed");
+        };
       }
+    }
 
-      window.addEventListener("resize", resize);
-      window.addEventListener("pageshow", loadFromStorage);
-      setTimeout(resize, 100);
+    function resize() {
+      const data = canvas.toDataURL();
+      canvas.width = canvas.offsetWidth * ratio;
+      canvas.height = canvas.offsetHeight * ratio;
+      ctx.scale(ratio, ratio);
+      ctx.lineWidth = 3;
+      ctx.lineCap = "round";
+      ctx.strokeStyle = "#000";
 
-      let drawing = false;
-
-      function getPos(e) {
-        const rect = c.getBoundingClientRect();
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        return { x: clientX - rect.left, y: clientY - rect.top };
-      }
-
-      function start(e) {
-        drawing = true;
-        const pos = getPos(e);
-        ctx.beginPath();
-        ctx.moveTo(pos.x, pos.y);
-        if (e.touches) e.preventDefault();
-      }
-
-      function move(e) {
-        if (!drawing) return;
-        const pos = getPos(e);
-        ctx.lineTo(pos.x, pos.y);
-        ctx.stroke();
-        if (e.touches) e.preventDefault();
-      }
-
-      function stop() {
-        if (drawing) {
-          drawing = false;
-          saveToStorage();
-        }
-      }
-
-      c.addEventListener("mousedown", start);
-      c.addEventListener("mousemove", move);
-      window.addEventListener("mouseup", stop);
-
-      c.addEventListener("touchstart", start, { passive: false });
-      c.addEventListener("touchmove", move, { passive: false });
-      window.addEventListener("touchend", stop);
-
-      return {
-        clear: () => {
-          ctx.clearRect(0, 0, c.width, c.height);
-          localStorage.removeItem(storageKey);
-        },
-        isBlank: () => {
-          const buffer = new Uint32Array(ctx.getImageData(0, 0, c.width, c.height).data.buffer);
-          return !buffer.some(color => color !== 0);
-        },
-        data: () => {
-          const tempCanvas = document.createElement('canvas');
-          tempCanvas.width = c.offsetWidth;
-          tempCanvas.height = c.offsetHeight;
-          const tempCtx = tempCanvas.getContext('2d');
-          tempCtx.drawImage(c, 0, 0, c.width, c.height, 0, 0, c.offsetWidth, c.offsetHeight);
-          return tempCanvas.toDataURL();
-        }
+      const img = new Image();
+      const storedData = localStorage.getItem(storageKey);
+      img.src = data.length > 2000 ? data : (storedData || "");
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, canvas.offsetWidth, canvas.offsetHeight);
       };
     }
-    const sigCliente = makeCanvas("sigCliente");
-    clearCliente.onclick = () => sigCliente.clear();
 
-    // ---------- BUILD ----------
-    function buildRel() {
-      if (sigCliente.isBlank()) { alert("Assinatura obrigatória"); return null; }
-      return {
-        id: contador,
-        cliente: nomeCliente.value,
-        emailCliente: emailCliente.value,
-        telefone: telefone.value,
-        responsavel: responsavel.value,
-        equipamento: equipamento.value,
-        tipoServico: tipoServico.value,
-        defeito: defeito.value,
-        descricao: descricao.value,
-        materiais: materiais.value,
-        data: dataInicio.value,
-        horaInicio: horaInicio.value,
-        horaFim: horaFim.value,
-        tecnico: techName.value,
-        assinaturaCliente: sigCliente.data()
+    window.addEventListener("resize", resize);
+    window.addEventListener("pageshow", loadFromStorage);
+    setTimeout(resize, 100);
+
+    function getPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      return { x: clientX - rect.left, y: clientY - rect.top };
+    }
+
+    function start(e) {
+      if (e.target !== canvas) return;
+      e.preventDefault();
+      drawing = true;
+      const pos = getPos(e);
+      ctx.beginPath();
+      ctx.moveTo(pos.x, pos.y);
+      hasSignature = true;
+      sigInfo.textContent = "Assinatura registrada";
+      sigInfo.classList.add("signed");
+    }
+
+    function move(e) {
+      if (!drawing) return;
+      e.preventDefault();
+      const pos = getPos(e);
+      ctx.lineTo(pos.x, pos.y);
+      ctx.stroke();
+    }
+
+    function stop() {
+      if (drawing) {
+        drawing = false;
+        saveToStorage();
       }
     }
 
-    // ---------- PDF ----------
-    async function gerarPDFBlob(rel) {
+    canvas.addEventListener("touchstart", start, { passive: false });
+    canvas.addEventListener("mousedown", start);
+    canvas.addEventListener("touchmove", move, { passive: false });
+    canvas.addEventListener("mousemove", move);
+    window.addEventListener("touchend", stop);
+    window.addEventListener("mouseup", stop);
+
+    document.getElementById("btnLimpar").onclick = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      localStorage.removeItem(storageKey);
+      hasSignature = false;
+      sigInfo.textContent = "Toque e arraste para assinar";
+      sigInfo.classList.remove("signed");
+    };
+
+    /* ================= FOTOS ================= */
+    const fotosInput = document.getElementById("fotos");
+    const fotosPreview = document.getElementById("fotosPreview");
+    let photosList = [];
+    const MAX_PHOTOS = 10;
+
+    function renderPhotos() {
+      fotosPreview.innerHTML = "";
+      photosList.forEach((file, index) => {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const div = document.createElement("div");
+          div.className = "photo-item";
+          const img = document.createElement("img");
+          img.src = e.target.result;
+          const btnRemove = document.createElement("button");
+          btnRemove.innerHTML = "&times;";
+          btnRemove.className = "remove-btn";
+          btnRemove.style = "position:absolute;top:-5px;right:-5px;background:red;color:white;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;";
+          btnRemove.onclick = () => { photosList.splice(index, 1); renderPhotos(); };
+          div.appendChild(img);
+          div.appendChild(btnRemove);
+          fotosPreview.appendChild(div);
+        };
+        reader.readAsDataURL(file);
+      });
+      fotosInput.disabled = (photosList.length >= MAX_PHOTOS);
+    }
+
+    fotosInput.addEventListener("change", function () {
+      if (this.files) {
+        Array.from(this.files).forEach(f => {
+          if (photosList.length < MAX_PHOTOS) photosList.push(f);
+        });
+        renderPhotos();
+        this.value = "";
+      }
+    });
+
+    /* ================= PDF (NEW PROFESSIONAL LAYOUT) ================= */
+    async function gerarPDF() {
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF();
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
 
       const azul = [0, 86, 179];
       const cinzaClaro = [245, 245, 245];
 
+      // Cabeçalho Profissional
       pdf.setFillColor(...azul);
       pdf.rect(0, 0, 210, 40, 'F');
-
       pdf.setTextColor(255, 255, 255);
       pdf.setFontSize(22);
       pdf.setFont("helvetica", "bold");
       pdf.text("TECNOMED", 15, 20);
-
       pdf.setFontSize(10);
       pdf.setFont("helvetica", "normal");
       pdf.text("ASSISTÊNCIA TÉCNICA E MANUTENÇÃO", 15, 28);
       pdf.text("Serviços Especializados em Equipamentos Odontológicos", 15, 33);
-
       pdf.setFontSize(12);
-      pdf.text(`RELATÓRIO Nº ${rel.id}`, 155, 25);
+      pdf.text(`RELATÓRIO Nº ${contador}`, 155, 25);
 
       let y = 50;
 
       function drawSection(title) {
+        if (y > 270) { pdf.addPage(); y = 20; }
         pdf.setFillColor(...cinzaClaro);
         pdf.rect(10, y, 190, 8, 'F');
         pdf.setTextColor(0, 0, 0);
@@ -430,102 +350,150 @@
         y += 12;
       }
 
-      function drawField(label, value, xOffset = 10) {
+      function drawField(label, value, xOffset = 10, width = 190) {
         pdf.setFontSize(9);
         pdf.setFont("helvetica", "bold");
         pdf.text(`${label}:`, xOffset, y);
         pdf.setFont("helvetica", "normal");
-        pdf.text(String(value || "-"), xOffset + pdf.getTextWidth(`${label}: `), y);
+        const valStr = String(value || "-");
+        const splitVal = pdf.splitTextToSize(valStr, width - (pdf.getTextWidth(`${label}: `)));
+        pdf.text(splitVal, xOffset + pdf.getTextWidth(`${label}: `), y);
+        return (splitVal.length * 5);
       }
 
       drawSection("Dados do Cliente");
-      drawField("Cliente", rel.cliente);
-      y += 7;
-      drawField("E-mail", rel.emailCliente);
-      y += 7;
-      drawField("Telefone", rel.telefone);
-      y += 12;
+      drawField("Cliente", document.getElementById("nomeCliente").value); y += 7;
+      drawField("Email", document.getElementById("emailCliente").value); y += 7;
+      drawField("Telefone", document.getElementById("telefone").value); y += 7;
+      drawField("Endereço", `${document.getElementById("endereco").value} - ${document.getElementById("cidade").value}/${document.getElementById("estado").value}`); y += 10;
 
       drawSection("Informações do Serviço");
-      drawField("Equipamento", rel.equipamento);
-      y += 7;
-      drawField("Responsável", rel.responsavel);
-      y += 7;
-      drawField("Tipo de Manutenção", rel.tipoServico);
-      y += 12;
+      drawField("Equipamento", document.getElementById("equipamento").value); y += 7;
+      drawField("Responsável", document.getElementById("responsavel").value); y += 7;
+      drawField("Tipo de Manutenção", document.getElementById("tipoServico").value); y += 7;
+      drawField("Solicitante", document.getElementById("solicitante").value); y += 10;
 
       drawSection("Relatório Técnico");
       pdf.setFontSize(9);
-      pdf.setFont("helvetica", "normal");
-      const descLines = pdf.splitTextToSize(rel.descricao, 180);
+      const descLines = pdf.splitTextToSize(document.getElementById("descricao").value, 180);
       pdf.text(descLines, 14, y);
-      y += (descLines.length * 5) + 8;
+      y += (descLines.length * 5) + 5;
 
-      if (rel.materiais) {
-        pdf.setFont("helvetica", "bold");
-        pdf.text("Peças / Materiais:", 14, y);
-        y += 5;
-        pdf.setFont("helvetica", "normal");
-        pdf.text(rel.materiais, 14, y);
-        y += 10;
+      if (document.getElementById("defeito").value) {
+        drawField("Defeito", document.getElementById("defeito").value); y += 7;
       }
+      if (document.getElementById("materiais").value) {
+        drawField("Materiais", document.getElementById("materiais").value); y += 7;
+      }
+      y += 5;
 
       drawSection("Horários e Execução");
-      pdf.setFontSize(9);
-      pdf.text(`Data: ${rel.data.split('-').reverse().join('/')}`, 14, y);
-      pdf.text(`Início: ${rel.horaInicio}`, 80, y);
-      pdf.text(`Término: ${rel.horaFim}`, 140, y);
+      pdf.text(`Data: ${document.getElementById("dataInicio").value.split('-').reverse().join('/')}`, 14, y);
+      pdf.text(`Início: ${document.getElementById("horaInicio").value}`, 80, y);
+      pdf.text(`Término: ${document.getElementById("horaFim").value}`, 140, y);
       y += 8;
-      pdf.text(`Técnico Responsável: ${rel.tecnico}`, 14, y);
-      y += 15;
+      pdf.text(`Técnico: ${document.getElementById("techName").value}`, 14, y);
 
-      if (rel.assinaturaCliente) {
-        if (y > 230) pdf.addPage(), y = 20;
+      // Assinatura
+      if (hasSignature) {
+        y += 15;
+        if (y > 230) { pdf.addPage(); y = 20; }
         pdf.setFont("helvetica", "bold");
         pdf.text("ASSINATURA DO CLIENTE", 105, y, { align: "center" });
         y += 5;
-        pdf.addImage(rel.assinaturaCliente, "PNG", 65, y, 80, 25);
-        y += 28;
-        pdf.line(60, y, 150, y);
-        y += 5;
-        pdf.setFontSize(8);
-        pdf.setFont("helvetica", "normal");
-        pdf.text("Declaro que o serviço acima foi executado e testado em minha presença.", 105, y, { align: "center" });
+        try {
+          const imgData = canvas.toDataURL("image/png");
+          pdf.addImage(imgData, 'PNG', 65, y, 80, 25);
+          y += 28;
+          pdf.line(60, y, 150, y);
+          y += 5;
+          pdf.setFontSize(8);
+          pdf.setFont("helvetica", "normal");
+          pdf.text("Declaro que o serviço acima foi executado e testado em minha presença.", 105, y, { align: "center" });
+        } catch (e) { }
       }
 
+      // Fotos
+      if (photosList.length > 0) {
+        pdf.addPage();
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(14);
+        pdf.text("ANEXOS FOTOGRÁFICOS", 105, 15, { align: "center" });
+        let yPos = 25;
+        for (let file of photosList) {
+          const imgData = await new Promise(r => {
+            const rd = new FileReader();
+            rd.onload = () => r(rd.result);
+            rd.readAsDataURL(file);
+          });
+          if (yPos + 80 > pageHeight - 10) { pdf.addPage(); yPos = 20; }
+          pdf.addImage(imgData, "JPEG", 25, yPos, 160, 80);
+          yPos += 90;
+        }
+      }
+
+      // Footer
       const pageCount = pdf.internal.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         pdf.setPage(i);
         pdf.setFontSize(8);
         pdf.setTextColor(150);
-        pdf.text("TECNOMED - Assistência Técnica - Gerado de forma digital", 105, 290, { align: "center" });
+        pdf.text("TECNOMED - Assistência Técnica - Relatório Digital", 105, 290, { align: "center" });
       }
 
       return pdf.output("blob");
     }
 
-    btnGerarPDF.onclick = async () => {
-      const r = buildRel(); if (!r) return;
-      const blob = await gerarPDFBlob(r);
-      const url = URL.createObjectURL(blob);
-      window.open(url);
+    /* ================= AÇÕES ================= */
+    document.getElementById("btnPDF").onclick = async () => {
+      const blob = await gerarPDF();
+      window.open(URL.createObjectURL(blob));
     };
 
-    btnFinalizar.onclick = async () => {
-      const r = buildRel(); if (!r) return;
-      const blob = await gerarPDFBlob(r);
-      const fd = new FormData();
-      fd.append("relatorio", blob, `Relatorio_${r.id}.pdf`);
-      fd.append("nomeCliente", r.cliente);
-      fd.append("emailCliente", r.emailCliente);
-
-      const res = await fetch(SERVER_URL, { method: "POST", body: fd });
-      if (!res.ok) { alert("Falha no envio"); return; }
-
-      alert("Relatório enviado com sucesso!");
-      localStorage.removeItem("contadorRel");
-      location.reload();
+    document.getElementById("btnWhatsapp").onclick = async () => {
+      if (!hasSignature) { alert("Assine antes de compartilhar."); return; }
+      const loading = document.getElementById("loadingOverlay");
+      loading.classList.add("show");
+      try {
+        const blob = await gerarPDF();
+        const file = new File([blob], `Relatorio_${contador}.pdf`, { type: "application/pdf" });
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: 'Relatório Tecnomed' });
+        } else {
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = `Relatorio_${contador}.pdf`;
+          a.click();
+        }
+      } catch (err) { } finally { loading.classList.remove("show"); }
     };
+
+    document.getElementById("btnEnviar").onclick = async () => {
+      if (!document.getElementById("formRel").checkValidity()) { document.getElementById("formRel").reportValidity(); return; }
+      if (!hasSignature) { alert("Assinatura obrigatória"); return; }
+
+      const loading = document.getElementById("loadingOverlay");
+      loading.classList.add("show");
+
+      try {
+        const formData = new FormData();
+        const inputs = document.querySelectorAll("input, textarea, select");
+        inputs.forEach(el => { if (el.id && el.id !== "fotos") formData.append(el.id, el.value); });
+
+        const pdfBlob = await gerarPDF();
+        formData.append("relatorio", pdfBlob, `Relatorio_${contador}.pdf`);
+
+        const res = await fetch(SERVER_URL, { method: "POST", body: formData });
+        if (!res.ok) throw new Error("Erro no servidor");
+
+        alert("Sucesso! Relatório enviado agora.");
+        localStorage.removeItem(storageKey);
+        location.reload();
+      } catch (err) {
+        alert("Erro no envio: " + err.message);
+      } finally { loading.classList.remove("show"); }
+    };
+
   </script>
 </body>
 

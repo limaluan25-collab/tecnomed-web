@@ -13,7 +13,7 @@ app.use(express.json());
 const storage = multer.memoryStorage();
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 20 * 1024 * 1024 } // 20MB
+    limits: { fileSize: 50 * 1024 * 1024 } // 50MB
 });
 
 const transporter = nodemailer.createTransport({
@@ -25,7 +25,9 @@ const transporter = nodemailer.createTransport({
 });
 
 app.post('/api/upload', upload.fields([
-    { name: 'relatorio', maxCount: 1 }
+    { name: 'relatorio', maxCount: 1 },
+    { name: 'fotos', maxCount: 10 },
+    { name: 'assinatura', maxCount: 1 }
 ]), async (req, res) => {
     try {
         console.log('--- Novo Relatório Recebido ---');
@@ -38,6 +40,8 @@ app.post('/api/upload', upload.fields([
         }
 
         const attachments = [];
+
+        // Relatório PDF
         if (req.files['relatorio']) {
             const f = req.files['relatorio'][0];
             attachments.push({
@@ -47,11 +51,22 @@ app.post('/api/upload', upload.fields([
             });
         }
 
+        // Fotos separadas (se o usuário quiser)
+        if (req.files['fotos']) {
+            req.files['fotos'].forEach((f, index) => {
+                attachments.push({
+                    filename: `anexo_foto_${index + 1}.jpg`,
+                    content: f.buffer,
+                    contentType: f.mimetype
+                });
+            });
+        }
+
         const mailOptions = {
             from: `"Tecnomed Assistência Técnica" <${process.env.EMAIL_USER}>`,
             to: [process.env.EMAIL_USER, emailCliente].filter(Boolean),
             subject: `Relatório de Manutenção - ${cliente}`,
-            text: `Olá, segue em anexo o relatório de manutenção do equipamento para o cliente ${cliente}.\n\nTecnomed Assistência Técnica.`,
+            text: `Olá, segue em anexo o relatório de manutenção do equipamento para o cliente ${cliente}.\n\nEste é um e-mail automático enviado pelo sistema Tecnomed Web.`,
             attachments: attachments
         };
 
@@ -63,7 +78,6 @@ app.post('/api/upload', upload.fields([
     }
 });
 
-// Start for local testing
 if (require.main === module) {
     app.listen(PORT, '0.0.0.0', () => {
         console.log(`Servidor rodando localmente na porta ${PORT}`);
