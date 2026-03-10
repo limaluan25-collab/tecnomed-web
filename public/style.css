@@ -232,7 +232,13 @@ textarea:hover {
     margin-top: 15px;
 }
 
-.fotos-preview img {
+.photo-item {
+    display: inline-block;
+    position: relative;
+    margin: 5px;
+}
+
+.photo-item img {
     width: 100px;
     height: 100px;
     object-fit: cover;
@@ -241,7 +247,7 @@ textarea:hover {
     transition: transform 0.2s;
 }
 
-.fotos-preview img:hover {
+.photo-item img:hover {
     transform: scale(1.05);
     border-color: var(--primary-color);
 }

@@ -1,8 +1,9 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
-const path = require('path');
+
 const nodemailer = require('nodemailer');
 
 const app = express();
@@ -19,7 +20,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 const storage = multer.memoryStorage();
 const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
   fileFilter: (req, file, cb) => {
     const allowed = ['application/pdf', 'image/png', 'image/jpeg'];
     if (allowed.includes(file.mimetype)) cb(null, true);
@@ -46,17 +47,17 @@ if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
 // Nota: em ambientes serverless o valor não persiste entre cold starts/deploys.
 let currentCount = 1;
 
-app.get('/counter', (req, res) => {
+app.get('/api/counter', (req, res) => {
   res.json({ value: currentCount });
 });
 
-app.post('/counter/increment', (req, res) => {
+app.post('/api/counter/increment', (req, res) => {
   currentCount++;
   res.json({ value: currentCount });
 });
 
 // Endpoint para receber o relatório e enviar email
-app.post('/upload', upload.fields([
+app.post('/api/upload', upload.fields([
   { name: 'assinatura', maxCount: 1 },
   { name: 'fotos', maxCount: 10 },
   { name: 'relatorio', maxCount: 1 }
@@ -83,30 +84,20 @@ app.post('/upload', upload.fields([
       });
     }
 
+    // IGNORAR ASSINATURA E FOTOS SEPARADAS (Tudo já está no PDF)
+    /*
     if (req.files && req.files['assinatura'] && req.files['assinatura'][0]) {
-      const f = req.files['assinatura'][0];
-      const ext = f.originalname && f.originalname.split('.').pop();
-      attachments.push({
-        filename: f.originalname || `assinatura.${ext || 'png'}`,
-        content: f.buffer,
-        contentType: f.mimetype || 'image/png'
-      });
+       // ...
     }
-
     if (req.files && req.files['fotos']) {
-      req.files['fotos'].forEach((f, index) => {
-        attachments.push({
-          filename: f.originalname || `foto_${index}.jpg`,
-          content: f.buffer,
-          contentType: f.mimetype || 'image/jpeg'
-        });
-      });
+       // ...
     }
+    */
 
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: emailCliente,
-      cc: process.env.EMAIL_USER,
+      bcc: process.env.EMAIL_USER,
       subject: `Relatório de Manutenção - ${cliente}`,
       text: `Olá, segue em anexo o relatório de manutenção do equipamento para o cliente ${cliente}.`,
       attachments

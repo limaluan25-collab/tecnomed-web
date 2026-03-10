@@ -1,0 +1,19 @@
+{
+	"folders": [
+		{
+			"path": "../api"
+		},
+		{
+			"path": "../node_modules"
+		},
+		{
+			"path": "."
+		},
+		{
+			"path": "../uploads"
+		}
+	],
+	"settings": {
+		"liveServer.settings.multiRootWorkspaceName": "node_modules"
+	}
+}
