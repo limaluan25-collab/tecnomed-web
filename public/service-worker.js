@@ -1,4 +1,4 @@
-const CACHE_NAME = "tecnomed-offline-v6";
+const CACHE_NAME = "tecnomed-offline-v7";
 
 const FILES_TO_CACHE = [
   "./",

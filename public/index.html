@@ -274,6 +274,37 @@
       sigInfo.classList.remove("signed");
     };
 
+    /* ================= PERSISTÊNCIA TOTAL (OFFLINE) ================= */
+    const formFields = ["nomeCliente", "telefone", "emailCliente", "responsavel", "solicitante", "equipamento", "endereco", "cidade", "estado", "defeito", "tipoServico", "descricao", "dataInicio", "horaInicio", "horaFim", "techName", "materiais", "observacoes"];
+
+    // Salva automaticamente ao digitar
+    function saveFormData() {
+      const data = {};
+      formFields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) data[id] = el.value;
+      });
+      localStorage.setItem("tecnomed_form_backup", JSON.stringify(data));
+    }
+
+    // Carrega dados salvos ao abrir
+    function loadFormData() {
+      const saved = localStorage.getItem("tecnomed_form_backup");
+      if (saved) {
+        const data = JSON.parse(saved);
+        Object.keys(data).forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.value = data[id];
+        });
+      }
+    }
+
+    document.querySelectorAll("input, textarea, select").forEach(el => {
+      el.addEventListener("input", saveFormData);
+    });
+
+    window.addEventListener("load", loadFormData);
+
     /* ================= FOTOS ================= */
     const fotosInput = document.getElementById("fotos");
     const fotosPreview = document.getElementById("fotosPreview");
