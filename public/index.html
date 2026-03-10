@@ -313,7 +313,7 @@
       }
     });
 
-    /* ================= PDF (NEW PROFESSIONAL LAYOUT) ================= */
+    /* ================= PDF (REFINED PROFESSIONAL LAYOUT) ================= */
     async function gerarPDF() {
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF();
@@ -340,7 +340,7 @@
       let y = 50;
 
       function drawSection(title) {
-        if (y > 270) { pdf.addPage(); y = 20; }
+        if (y > 260) { pdf.addPage(); y = 20; }
         pdf.setFillColor(...cinzaClaro);
         pdf.rect(10, y, 190, 8, 'F');
         pdf.setTextColor(0, 0, 0);
@@ -350,49 +350,64 @@
         y += 12;
       }
 
-      function drawField(label, value, xOffset = 10, width = 190) {
+      function drawField(label, value, xOffset = 15, width = 180) {
+        if (y > 280) { pdf.addPage(); y = 20; }
         pdf.setFontSize(9);
         pdf.setFont("helvetica", "bold");
-        pdf.text(`${label}:`, xOffset, y);
+        const labelText = `${label}: `;
+        pdf.text(labelText, xOffset, y);
+
         pdf.setFont("helvetica", "normal");
+        const labelWidth = pdf.getTextWidth(labelText);
         const valStr = String(value || "-");
-        const splitVal = pdf.splitTextToSize(valStr, width - (pdf.getTextWidth(`${label}: `)));
-        pdf.text(splitVal, xOffset + pdf.getTextWidth(`${label}: `), y);
-        return (splitVal.length * 5);
+        const splitVal = pdf.splitTextToSize(valStr, width - labelWidth);
+
+        pdf.text(splitVal, xOffset + labelWidth, y);
+        y += (splitVal.length * 5) + 3; // Incremento automático
       }
 
       drawSection("Dados do Cliente");
-      drawField("Cliente", document.getElementById("nomeCliente").value); y += 7;
-      drawField("Email", document.getElementById("emailCliente").value); y += 7;
-      drawField("Telefone", document.getElementById("telefone").value); y += 7;
-      drawField("Endereço", `${document.getElementById("endereco").value} - ${document.getElementById("cidade").value}/${document.getElementById("estado").value}`); y += 10;
+      drawField("Cliente", document.getElementById("nomeCliente").value);
+      drawField("Email", document.getElementById("emailCliente").value);
+      drawField("Telefone", document.getElementById("telefone").value);
+      drawField("Endereço", `${document.getElementById("endereco").value} - ${document.getElementById("cidade").value}/${document.getElementById("estado").value}`);
+      y += 2;
 
       drawSection("Informações do Serviço");
-      drawField("Equipamento", document.getElementById("equipamento").value); y += 7;
-      drawField("Responsável", document.getElementById("responsavel").value); y += 7;
-      drawField("Tipo de Manutenção", document.getElementById("tipoServico").value); y += 7;
-      drawField("Solicitante", document.getElementById("solicitante").value); y += 10;
+      drawField("Equipamento", document.getElementById("equipamento").value);
+      drawField("Responsável", document.getElementById("responsavel").value);
+      drawField("Tipo de Manutenção", document.getElementById("tipoServico").value);
+      drawField("Solicitante", document.getElementById("solicitante").value);
+      y += 2;
 
       drawSection("Relatório Técnico");
+      pdf.setFontSize(10);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("Descrição do Serviço:", 15, y);
+      y += 6;
+      pdf.setFont("helvetica", "normal");
       pdf.setFontSize(9);
       const descLines = pdf.splitTextToSize(document.getElementById("descricao").value, 180);
-      pdf.text(descLines, 14, y);
-      y += (descLines.length * 5) + 5;
+      pdf.text(descLines, 15, y);
+      y += (descLines.length * 5) + 6;
 
       if (document.getElementById("defeito").value) {
-        drawField("Defeito", document.getElementById("defeito").value); y += 7;
+        drawField("Defeito", document.getElementById("defeito").value);
       }
       if (document.getElementById("materiais").value) {
-        drawField("Materiais", document.getElementById("materiais").value); y += 7;
+        drawField("Materiais", document.getElementById("materiais").value);
+      }
+      if (document.getElementById("observacoes").value) {
+        drawField("Observações", document.getElementById("observacoes").value);
       }
       y += 5;
 
       drawSection("Horários e Execução");
-      pdf.text(`Data: ${document.getElementById("dataInicio").value.split('-').reverse().join('/')}`, 14, y);
+      pdf.text(`Data: ${document.getElementById("dataInicio").value.split('-').reverse().join('/')}`, 15, y);
       pdf.text(`Início: ${document.getElementById("horaInicio").value}`, 80, y);
       pdf.text(`Término: ${document.getElementById("horaFim").value}`, 140, y);
       y += 8;
-      pdf.text(`Técnico: ${document.getElementById("techName").value}`, 14, y);
+      pdf.text(`Técnico Responsável: ${document.getElementById("techName").value}`, 15, y);
 
       // Assinatura
       if (hasSignature) {
@@ -426,7 +441,7 @@
             rd.onload = () => r(rd.result);
             rd.readAsDataURL(file);
           });
-          if (yPos + 80 > pageHeight - 10) { pdf.addPage(); yPos = 20; }
+          if (yPos + 80 > pageHeight - 15) { pdf.addPage(); yPos = 20; }
           pdf.addImage(imgData, "JPEG", 25, yPos, 160, 80);
           yPos += 90;
         }
@@ -438,7 +453,7 @@
         pdf.setPage(i);
         pdf.setFontSize(8);
         pdf.setTextColor(150);
-        pdf.text("TECNOMED - Assistência Técnica - Relatório Digital", 105, 290, { align: "center" });
+        pdf.text("TECNOMED - Assistência Técnica - Relatório Digital Gerado via Tecnomed Web", 105, 290, { align: "center" });
       }
 
       return pdf.output("blob");
