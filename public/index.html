@@ -159,18 +159,32 @@
     /* ================= CONFIG ================= */
     const SERVER_URL = `/api/upload`;
 
-    // Gerar ID baseado em data (PWA style)
-    function generateID() {
-      const now = new Date();
-      return now.getFullYear().toString() +
-        (now.getMonth() + 1).toString().padStart(2, '0') +
-        now.getDate().toString().padStart(2, '0') + "-" +
-        now.getHours().toString().padStart(2, '0') +
-        now.getMinutes().toString().padStart(2, '0');
+    // Obter numero sequencial do relatorio da API
+    let contador = localStorage.getItem("contadorRel") || "----";
+    document.getElementById("numRel").innerText = contador;
+
+    async function fetchCounter() {
+      try {
+        const res = await fetch('/api/counter');
+        if (res.ok) {
+          const data = await res.json();
+          contador = String(data.id).padStart(4, "0");
+          document.getElementById("numRel").innerText = contador;
+          localStorage.setItem("contadorRel", contador);
+        }
+      } catch (e) {
+        console.warn('Usando contador em cache (offline).');
+        // Se contador continuar "----" e offline, gera um fallback
+        if (contador === "----") {
+          const now = new Date();
+          contador = now.getFullYear().toString().slice(-2) + now.getHours().toString() + now.getMinutes().toString();
+          document.getElementById("numRel").innerText = contador;
+        }
+      }
     }
 
-    let contador = localStorage.getItem("contadorRel") || generateID();
-    document.getElementById("numRel").innerText = contador;
+    // Inicia a busca pelo ID real assim que a página carrega
+    fetchCounter();
 
     if (!document.getElementById("dataInicio").value) {
       document.getElementById("dataInicio").value = new Date().toISOString().split("T")[0];

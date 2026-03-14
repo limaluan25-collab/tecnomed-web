@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
 const nodemailer = require('nodemailer');
+const { kv } = require('@vercel/kv');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -21,6 +22,31 @@ const transporter = nodemailer.createTransport({
     auth: {
         user: 'tecnomed.se@gmail.com',
         pass: 'evhcaymsjijtftpe'
+    }
+});
+
+// Endpoint para gerar um numero de relatório único e sequencial
+app.get('/api/counter', async (req, res) => {
+    try {
+        let count = 1;
+
+        // Tenta usar Vercel KV se configurado
+        if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
+            count = await kv.incr('tecnomed_relatorio_counter');
+        } else {
+            // Fallback para ambiente de desenvolvimento sem KV
+            // Usando ID baseado em data se não houver Redis (PWA style modificado)
+            const now = new Date();
+            const timeId = Math.floor(now.getTime() / 1000).toString().slice(-4);
+            count = parseInt(timeId);
+        }
+
+        res.json({ id: count });
+    } catch (error) {
+        console.error('Erro ao gerar contador:', error);
+        // Fallback seguro em caso de erro no Redis
+        const fallbackId = Math.floor(Math.random() * 9000) + 1000;
+        res.json({ id: fallbackId });
     }
 });
 
