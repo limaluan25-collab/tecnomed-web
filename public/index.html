@@ -534,6 +534,8 @@
 
         alert("Sucesso! Relatório enviado agora.");
         localStorage.removeItem(storageKey);
+        localStorage.removeItem("tecnomed_form_backup");
+        document.getElementById("formRel").reset();
         location.reload();
       } catch (err) {
         alert("Erro no envio: " + err.message);
