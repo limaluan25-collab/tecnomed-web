@@ -1,566 +1,1927 @@
-<!DOCTYPE html>
+
+
+<!doctype html>
+
+
 <html lang="pt-BR">
-
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/>
   <title>Tecnomed — Relatório de Manutenção</title>
+  <meta name="theme-color" content="#123b63"/>
+  <link rel="manifest" href="./manifest.json"/>
+  <link rel="icon" href="./icon.svg" type="image/svg+xml"/>
+  <link rel="stylesheet" href="./libs/bootstrap-5.3.8-dist/css/bootstrap.min.css"/>
+  <script src="./libs/jspdf.umd.min.js"></script>
 
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <style>
+    :root {
+      color-scheme: light;
+      --tecnomed-blue: #145a8d;
+      --tecnomed-navy: #123b63;
+      --tecnomed-border: #dce5ef;
+      --tecnomed-muted: #607286;
+    }
+    body {
+      background: linear-gradient(145deg, #edf4fa 0%, #f7f9fc 48%, #edf3f8 100%);
+      padding: 28px 14px;
+      color: #203246;
+      font-family: "Segoe UI", Arial, sans-serif;
+      min-height: 100vh;
+    }
+    .app-card {
+      max-width: 1080px;
+      margin: auto;
+      padding: clamp(18px, 3vw, 36px);
+      border: 1px solid rgba(220, 229, 239, 0.9);
+      border-radius: 20px;
+      background: #fff;
+      box-shadow: 0 18px 50px rgba(28, 57, 84, 0.1);
+    }
+    .app-header {
+      padding: 8px 0 20px;
+      border-bottom: 1px solid var(--tecnomed-border);
+    }
+    .app-header h1 {
+      color: var(--tecnomed-navy);
+      font-size: clamp(1.35rem, 3vw, 1.8rem);
+      font-weight: 750;
+      letter-spacing: -0.035em;
+    }
+    .report-number {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: #edf5fc;
+      color: var(--tecnomed-blue);
+      font-size: 0.95rem;
+    }
+    label {
+      display: inline-block;
+      color: #33475b;
+      font-weight: 650;
+      font-size: 0.94rem;
+      margin-bottom: 6px;
+    }
+    #formRel input:not([type="file"]), #formRel textarea, #formRel select {
+      width: 100%;
+      padding: 11px 13px;
+      border-radius: 10px;
+      border: 1px solid #cbd7e3;
+      font-size: 1rem;
+      background: #fff;
+      color: #203246;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    #formRel input:focus, #formRel textarea:focus, #formRel select:focus {
+      border-color: #5b9bd0;
+      box-shadow: 0 0 0 3px rgba(20, 90, 141, 0.12);
+      outline: 0;
+    }
+    #formRel input::placeholder, #formRel textarea::placeholder { color: #93a2b1; }
+    #formRel textarea { min-height: 100px; resize: vertical; }
+    #formRel select { min-height: 48px; }
+    .form-section {
+      padding: clamp(16px, 2.5vw, 24px);
+      border: 1px solid var(--tecnomed-border);
+      border-radius: 16px;
+      background: #fff;
+    }
+    .form-section-heading {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0;
+      color: var(--tecnomed-navy);
+      font-size: 1.05rem;
+      font-weight: 750;
+    }
+    .form-section-heading::before {
+      width: 4px;
+      height: 22px;
+      border-radius: 4px;
+      background: #2b82bd;
+      content: "";
+    }
+    .section-hint {
+      margin: -4px 0 0;
+      color: var(--tecnomed-muted);
+      font-size: 0.9rem;
+    }
 
-  <!-- Bootstrap LOCAL -->
-  <link rel="stylesheet" href="libs/bootstrap.min.css">
-
-  <!-- Custom CSS (Restaurado) -->
-  <link rel="stylesheet" href="style.css?v=4">
-
-  <!-- jsPDF LOCAL -->
-  <script src="libs/jspdf.umd.min.js"></script>
+    .sig-area {
+      margin: 20px 0;
+      padding: 15px;
+      background: #f0f6fb;
+      border: 1px solid var(--tecnomed-border);
+      border-radius: 14px;
+      text-align: center;
+    }
+    .sig-canvas {
+      background: #fff;
+      width: 100%;
+      height: 320px;
+      border: 2px solid #c6d9e8;
+      border-radius: 10px;
+      touch-action: none;
+      margin-bottom: 10px;
+    }
+    .sig-info {
+      padding: 14px;
+      background: #fff;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      font-weight: bold;
+    }
+    .sig-info.signed {
+      background: #d4edda;
+      color: #155724;
+    }
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 30px;
+      padding: 10px 0;
+    }
+    .btn { border-radius: 10px; font-weight: 650; }
+    .actions .btn {
+      flex: 1 1 200px;
+      padding: 13px 18px;
+      font-size: 1rem;
+      min-width: 180px;
+    }
+    #loadingOverlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.75);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+    }
+    #loadingOverlay.show { display: flex; }
+    .fotos-preview img {
+      max-width: 120px;
+      margin: 5px;
+      border: 2px solid #0d6efd;
+      border-radius: 6px;
+    }
+    .aviso-rolar {
+      text-align: center;
+      padding: 15px;
+      background: #fff3cd;
+      border: 1px solid #ffeaa7;
+      border-radius: 8px;
+      margin: 20px 0;
+      font-weight: bold;
+      color: #856404;
+    }
+    .pdf-dialog {
+      width: min(1000px, 96vw);
+      max-width: none;
+      height: min(92vh, 900px);
+      padding: 16px;
+      border: 0;
+      border-radius: 16px;
+      box-shadow: 0 20px 70px rgba(0, 0, 0, 0.25);
+    }
+    .pdf-dialog::backdrop { background: rgba(0, 0, 0, 0.7); }
+    .pdf-preview-pages {
+      width: 100%;
+      height: calc(100% - 100px);
+      border: 1px solid #dee2e6;
+      overflow: auto;
+      padding: 12px;
+      background: #e9ecef;
+    }
+    .pdf-preview-pages canvas {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      margin: 0 auto 12px;
+      background: #fff;
+      box-shadow: 0 1px 6px rgba(0, 0, 0, 0.2);
+    }
+    @media (max-width: 575.98px) {
+      body { padding: 12px 8px; }
+      .app-card { border-radius: 15px; }
+      .sig-canvas { height: 240px; }
+      .actions .btn { flex-basis: 100%; }
+    }
+  </style>
 </head>
-
 <body>
 
   <div id="loadingOverlay">
     <div class="spinner-border text-light" style="width:5rem;height:5rem;"></div>
   </div>
 
-  <div class="card">
-    <h1 class="text-center header-title">TECNOMED – Relatório de Manutenção</h1>
-    <div class="text-center mb-4"><span class="report-number">Relatório Nº <span id="numRel">0001</span></span></div>
+  <div class="app-card">
+    <header class="app-header text-center mb-4">
+      <h1 class="mb-3">TECNOMED — Relatório de Manutenção</h1>
+      <div class="report-number fw-bold">Relatório Nº <span id="numRel">0001</span></div>
+    </header>
+    <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
+      <span id="statusConexao" class="badge text-bg-secondary" role="status">Verificando conexão</span>
+      <button type="button" id="btnInstalarApp" class="btn btn-outline-primary btn-sm" hidden>Instalar app</button>
+    </div>
+
+    <details class="mb-4">
+      <summary class="fw-bold">Buscar relatórios salvos neste celular</summary>
+      <div class="row g-3 mt-1">
+        <div class="col-12 col-md-3">
+          <label for="buscaData">Data</label>
+          <input id="buscaData" type="date">
+        </div>
+        <div class="col-12 col-md-3">
+          <label for="buscaCliente">Cliente</label>
+          <input id="buscaCliente" type="search" placeholder="Nome do cliente">
+        </div>
+        <div class="col-12 col-md-3">
+          <label for="buscaTipoServico">Tipo de serviço</label>
+          <select id="buscaTipoServico">
+            <option value="">Todos</option>
+            <option value="Preventiva">Preventiva</option>
+            <option value="Corretiva">Corretiva</option>
+          </select>
+        </div>
+        <div class="col-12 col-md-3">
+          <label for="buscaNumero">Nº do relatório</label>
+          <input id="buscaNumero" type="search" inputmode="numeric" placeholder="Ex.: 0001">
+        </div>
+        <div class="col-12">
+          <button type="button" id="btnBuscarRelatorios" class="btn btn-outline-primary">Buscar</button>
+          <button type="button" id="btnLimparBusca" class="btn btn-outline-secondary">Limpar busca</button>
+        </div>
+        <div class="col-12">
+          <div class="table-responsive">
+            <table class="table table-sm align-middle">
+              <thead>
+                <tr><th>Nº</th><th>Data</th><th>Cliente</th><th>Serviço</th><th>Status</th><th></th></tr>
+              </thead>
+              <tbody id="resultadosRelatorios"></tbody>
+            </table>
+          </div>
+          <div id="mensagemBusca" class="text-muted" role="status">Nenhuma busca realizada.</div>
+        </div>
+      </div>
+    </details>
 
     <form id="formRel">
-      <div class="row g-3">
-
+      <div class="row g-4">
         <div class="col-12">
-          <label>Nome do Cliente *</label>
-          <input id="nomeCliente" required>
-        </div>
-
-        <div class="col-md-6">
-          <label>Telefone</label>
-          <input id="telefone">
-        </div>
-
-        <div class="col-md-6">
-          <label>Email *</label>
-          <input id="emailCliente" type="email" required>
-        </div>
-
-        <div class="col-md-6">
-          <label>Responsável *</label>
-          <input id="responsavel" required>
-        </div>
-
-        <div class="col-md-6">
-          <label>Solicitante</label>
-          <input id="solicitante">
+          <section class="form-section" aria-labelledby="tituloClienteUnidade">
+            <div class="row g-3">
+              <div class="col-12">
+                <h2 id="tituloClienteUnidade" class="form-section-heading">1. Cliente e unidade</h2>
+                <p class="section-hint mt-2">Dados de contato e localização onde o serviço foi realizado.</p>
+              </div>
+              <div class="col-12 col-md-6"><label for="nomeCliente">Cliente *</label><input id="nomeCliente" autocomplete="organization" required></div>
+              <div class="col-12 col-md-6"><label for="emailCliente">Email do cliente *</label><input id="emailCliente" type="email" autocomplete="email" required></div>
+              <div class="col-12 col-md-6"><label for="telefone">Telefone</label><input id="telefone" type="tel" autocomplete="tel"></div>
+              <div class="col-12 col-md-6"><label for="responsavel">Responsável pela unidade *</label><input id="responsavel" required></div>
+              <div class="col-12 col-md-6"><label for="solicitante">Solicitante</label><input id="solicitante"></div>
+              <div class="col-12 col-md-8"><label for="endereco">Endereço</label><input id="endereco" autocomplete="street-address" placeholder="Rua, número e complemento"></div>
+              <div class="col-12 col-md-3"><label for="cidade">Cidade</label><input id="cidade" autocomplete="address-level2"></div>
+              <div class="col-12 col-md-1"><label for="estado">UF</label><input id="estado" maxlength="2" autocomplete="address-level1"></div>
+            </div>
+          </section>
         </div>
 
         <div class="col-12">
-          <label>Equipamento</label>
-          <input id="equipamento">
+          <section class="form-section" aria-labelledby="tituloEquipamento">
+            <div class="row g-3">
+              <div class="col-12">
+                <h2 id="tituloEquipamento" class="form-section-heading">2. Dados do equipamento</h2>
+                <p class="section-hint mt-2">Identifique o equipamento atendido para facilitar a consulta do relatório.</p>
+              </div>
+              <div class="col-12 col-md-6"><label for="nomeEquipamento">Nome do equipamento</label><input id="nomeEquipamento" placeholder="Ex.: Autoclave"></div>
+              <div class="col-12 col-md-6"><label for="modeloEquipamento">Modelo</label><input id="modeloEquipamento" placeholder="Informe o modelo"></div>
+              <div class="col-12 col-md-6"><label for="numeroSerieEquipamento">Número de série</label><input id="numeroSerieEquipamento" placeholder="Informe o número de série"></div>
+              <div class="col-12 col-md-6"><label for="patrimonioEquipamento">Patrimônio</label><input id="patrimonioEquipamento" placeholder="Informe o número de patrimônio"></div>
+            </div>
+          </section>
         </div>
 
-        <div class="col-md-8">
-          <label>Endereço</label>
-          <input id="endereco">
-        </div>
+        <div class="col-12"><label>Descrição do Defeito *</label><textarea id="defeito" required></textarea></div>
 
-        <div class="col-md-3">
-          <label>Cidade</label>
-          <input id="cidade">
-        </div>
-
-        <div class="col-md-1">
-          <label>UF</label>
-          <input id="estado" maxlength="2">
-        </div>
-
-        <div class="col-12">
-          <label>Descrição do Defeito *</label>
-          <textarea id="defeito" required></textarea>
-        </div>
-
-        <div class="col-md-4">
+        <div class="col-12 col-md-4">
           <label>Tipo de Serviço *</label>
           <select id="tipoServico" required>
-            <option>Preventiva</option>
-            <option>Corretiva</option>
+            <option value="Preventiva">Preventiva</option>
+            <option value="Corretiva">Corretiva</option>
           </select>
         </div>
 
+        <div class="col-12"><label>Serviço Executado *</label><textarea id="descricao" required></textarea></div>
+
+        <div class="col-12 col-md-4"><label>Data *</label><input id="dataInicio" type="date" required></div>
+        <div class="col-12 col-md-4"><label>Hora Início *</label><input id="horaInicio" type="text" inputmode="numeric" autocomplete="off" placeholder="HH:MM" maxlength="5" pattern="([01][0-9]|2[0-3]):[0-5][0-9]" title="Use o formato 24 horas, por exemplo 14:30" required></div>
+        <div class="col-12 col-md-4"><label>Hora Término *</label><input id="horaFim" type="text" inputmode="numeric" autocomplete="off" placeholder="HH:MM" maxlength="5" pattern="([01][0-9]|2[0-3]):[0-5][0-9]" title="Use o formato 24 horas, por exemplo 14:30" required></div>
+
+        <div class="col-12 col-md-6"><label>Técnico Responsável *</label><input id="techName" required></div>
+        <div class="col-12"><h5 class="mb-0 text-primary">Valores do Serviço</h5></div>
         <div class="col-12">
-          <label>Serviço Executado *</label>
-          <textarea id="descricao" required></textarea>
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-2">
+              <thead>
+                <tr>
+                  <th scope="col">Peça</th>
+                  <th scope="col">Qtd.</th>
+                  <th scope="col">Valor unitário</th>
+                  <th scope="col">Subtotal</th>
+                  <th scope="col"><span class="visually-hidden">Ação</span></th>
+                </tr>
+              </thead>
+              <tbody id="listaPecas"></tbody>
+            </table>
+          </div>
+          <button type="button" id="btnAdicionarPeca" class="btn btn-outline-primary">+ Adicionar peça</button>
         </div>
-
-        <div class="col-md-4">
-          <label>Data *</label>
-          <input id="dataInicio" type="date" required>
+        <div class="col-12 col-md-4">
+          <label for="valorMaoObra">Mão de obra (R$)</label>
+          <input id="valorMaoObra" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0,00">
         </div>
-
-        <div class="col-md-4">
-          <label>Hora Início *</label>
-          <input id="horaInicio" type="time" required>
+        <div class="col-12 col-md-4">
+          <label for="valorDeslocamento">Deslocamento (R$)</label>
+          <input id="valorDeslocamento" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0,00">
         </div>
-
-        <div class="col-md-4">
-          <label>Hora Término *</label>
-          <input id="horaFim" type="time" required>
+        <div class="col-12 col-md-2">
+          <label for="tipoDesconto">Desconto</label>
+          <select id="tipoDesconto">
+            <option value="valor">R$</option>
+            <option value="percentual">%</option>
+          </select>
         </div>
-
-        <div class="col-md-6">
-          <label>Técnico *</label>
-          <input id="techName" required>
+        <div class="col-12 col-md-2">
+          <label for="valorDesconto">Valor</label>
+          <input id="valorDesconto" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0,00">
         </div>
-
-        <div class="col-md-6">
-          <label>Materiais Utilizados</label>
-          <textarea id="materiais"></textarea>
-        </div>
-
         <div class="col-12">
-          <label>Observações</label>
-          <textarea id="observacoes"></textarea>
+          <div class="border-top pt-3">
+            <div class="d-flex justify-content-between"><span>Subtotal de peças</span><strong id="subtotalPecas">R$ 0,00</strong></div>
+            <div class="d-flex justify-content-between"><span>Valor do serviço</span><strong id="subtotalGeral">R$ 0,00</strong></div>
+            <div class="d-flex justify-content-between"><span>Desconto aplicado</span><strong id="descontoAplicado">R$ 0,00</strong></div>
+            <div class="d-flex justify-content-between fs-5 mt-2"><span>Valor total</span><strong id="valorTotal">R$ 0,00</strong></div>
+          </div>
+        </div>
+        <div class="col-12"><label>Observações</label><textarea id="observacoes"></textarea></div>
+
+        <!-- AVISO PARA ROLAR -->
+        <div class="col-12">
+          <div class="aviso-rolar">
+            👇 ROLE PARA BAIXO PARA ADICIONAR FOTOS E ASSINAR
+          </div>
         </div>
 
+        <!-- FOTOS -->
         <div class="col-12">
-          <label>Fotos</label>
+          <label>Fotos (opcional - toque para adicionar)</label>
           <input type="file" id="fotos" class="form-control" multiple accept="image/*">
-          <div id="fotosPreview" class="fotos-preview mt-2"></div>
+          <div class="fotos-preview d-flex flex-wrap mt-3" id="fotosPreview"></div>
         </div>
 
+        <!-- ASSINATURA -->
         <div class="col-12">
-          <label>Assinatura do Cliente *</label>
+          <label class="fs-4">✍️ Assinatura do Cliente *</label>
           <div class="sig-area">
             <canvas id="sigCanvas" class="sig-canvas"></canvas>
-            <div id="sigInfo" class="sig-info">Toque e arraste para assinar</div>
+            <div class="sig-info" id="sigInfo">👆 TOQUE E ARRASTE O DEDO PARA ASSINAR</div>
+            <button type="button" id="btnLimparCliente" class="btn btn-outline-danger mt-2">Limpar assinatura do cliente</button>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <label class="fs-4">✍️ Assinatura do Técnico *</label>
+          <div class="sig-area">
+            <canvas id="sigCanvasTecnico" class="sig-canvas"></canvas>
+            <div class="sig-info" id="sigInfoTecnico">TOQUE/CLIQUE E ARRASTE PARA ASSINAR</div>
+            <button type="button" id="btnLimparTecnico" class="btn btn-outline-danger mt-2">Limpar assinatura do técnico</button>
           </div>
         </div>
 
         <div class="col-12 actions">
-          <button type="button" id="btnLimpar" class="btn btn-outline-danger">Limpar</button>
-          <button type="button" id="btnPDF" class="btn btn-primary">Ver PDF</button>
-          <button type="button" id="btnWhatsapp" class="btn btn-success"
-            style="background: #25D366; border:none;">WhatsApp</button>
-          <button type="button" id="btnEnviar" class="btn btn-success">Finalizar</button>
+          <button type="button" id="btnSalvarRascunho" class="btn btn-outline-primary">💾 Salvar no celular</button>
+          <button type="button" id="btnPDF" class="btn btn-primary">📄 Ver PDF</button>
+          <button type="button" id="btnWhatsApp" class="btn btn-outline-success">Enviar pelo WhatsApp</button>
+          <button type="button" id="btnEnviar" class="btn btn-success">✅ Finalizar</button>
         </div>
 
       </div>
     </form>
 
-    <div id="alertContainer" class="mt-3"></div>
+    <div id="alertContainer" class="mt-4" role="status" aria-live="polite"></div>
   </div>
 
+  <dialog id="pdfDialog" class="pdf-dialog" aria-labelledby="pdfDialogTitle">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h2 id="pdfDialogTitle" class="h5 mb-0">Prévia do relatório</h2>
+      <button type="button" id="btnFecharPDF" class="btn-close" aria-label="Fechar prévia"></button>
+    </div>
+    <div id="pdfPreviewPages" class="pdf-preview-pages" role="region" aria-label="Páginas do relatório PDF">
+      <p id="pdfPreviewStatus" class="text-center text-muted">A prévia aparecerá aqui.</p>
+    </div>
+    <div class="d-flex justify-content-end gap-2 mt-2">
+      <a id="btnBaixarPDF" class="btn btn-primary" download>Baixar PDF</a>
+      <button type="button" id="btnFecharPDFRodape" class="btn btn-outline-secondary">Fechar</button>
+    </div>
+  </dialog>
+
+  <dialog id="whatsAppDialog" class="pdf-dialog" aria-labelledby="whatsAppDialogTitle">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h2 id="whatsAppDialogTitle" class="h5 mb-0">Compartilhar relatório</h2>
+      <button type="button" id="btnFecharWhatsApp" class="btn-close" aria-label="Fechar compartilhamento"></button>
+    </div>
+    <p id="mensagemWhatsAppAjuda">Compartilhe o arquivo PDF ou baixe-o para anexar na conversa do WhatsApp.</p>
+    <div class="d-flex justify-content-end gap-2">
+      <a id="btnBaixarWhatsAppPDF" class="btn btn-primary" download>Baixar PDF</a>
+      <button type="button" id="btnCompartilharWhatsApp" class="btn btn-success" hidden>Compartilhar PDF</button>
+    </div>
+  </dialog>
+
+  <dialog id="accessCodeDialog" class="pdf-dialog" aria-labelledby="accessCodeTitle">
+    <form id="accessCodeForm">
+      <h2 id="accessCodeTitle" class="h5 mb-3">Acesso Tecnomed</h2>
+      <p>Informe o código de acesso da equipe para enviar relatórios.</p>
+      <label for="accessCodeInput">Código de acesso</label>
+      <input id="accessCodeInput" type="password" class="form-control mb-2" autocomplete="current-password" required>
+      <p id="accessCodeError" class="text-danger" role="alert" hidden></p>
+      <div class="d-flex justify-content-end gap-2 mt-3">
+        <button id="btnCancelarAccessCode" type="button" class="btn btn-outline-secondary">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Continuar</button>
+      </div>
+    </form>
+  </dialog>
+
   <script>
-    /* ================= CONFIG ================= */
-    const SERVER_URL = `/api/upload`;
+    // Configurações básicas
+    const SERVIDOR_LOCAL = (() => {
+      const hostsLocais = ["localhost", "127.0.0.1"];
+      const portaAtual = window.location.port;
 
-    // Obter numero sequencial do relatorio da API
-    let contador = localStorage.getItem("contadorRel") || "----";
-    document.getElementById("numRel").innerText = contador;
+      return window.location.protocol === "file:" ||
+        hostsLocais.includes(window.location.hostname) ||
+        ["3000", "3011", "5173"].includes(portaAtual);
+    })();
 
-    async function fetchCounter() {
+    const SERVER_URL = (() => {
+      if (!SERVIDOR_LOCAL) return new URL("/api/upload", window.location.origin).toString();
+      const origemAPI = window.location.protocol === "file:"
+        ? new URL("http://localhost:3000")
+        : new URL(window.location.origin);
+      origemAPI.port = "3000";
+      origemAPI.pathname = "/upload";
+      return origemAPI.toString();
+    })();
+    const ACCESS_TOKEN_KEY = "tecnomedAccessToken";
+    const ACCESS_AUTH_URL = new URL(
+      "/api/auth",
+      window.location.protocol === "file:" ? "http://localhost:3000" : window.location.origin
+    ).toString();
+    const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
+    let resolverCodigoAcesso = null;
+
+    document.getElementById("accessCodeForm").addEventListener("submit", event => {
+      event.preventDefault();
+      const codigo = document.getElementById("accessCodeInput").value;
+      const resolver = resolverCodigoAcesso;
+      resolverCodigoAcesso = null;
+      document.getElementById("accessCodeDialog").close("submit");
+      document.getElementById("accessCodeInput").value = "";
+      if (resolver) resolver(codigo);
+    });
+
+    document.getElementById("btnCancelarAccessCode").addEventListener("click", () => {
+      document.getElementById("accessCodeDialog").close("cancel");
+    });
+
+    document.getElementById("accessCodeDialog").addEventListener("close", () => {
+      if (!resolverCodigoAcesso) return;
+      const resolver = resolverCodigoAcesso;
+      resolverCodigoAcesso = null;
+      resolver(null);
+    });
+
+    function solicitarCodigoAcesso(mensagem = "") {
+      const dialog = document.getElementById("accessCodeDialog");
+      const erro = document.getElementById("accessCodeError");
+      erro.textContent = mensagem;
+      erro.hidden = !mensagem;
+      document.getElementById("accessCodeInput").value = "";
+
+      return new Promise(resolve => {
+        resolverCodigoAcesso = resolve;
+        dialog.showModal();
+        document.getElementById("accessCodeInput").focus();
+      });
+    }
+
+    function accessTokenValido(token) {
       try {
-        const res = await fetch('/api/counter');
-        if (res.ok) {
-          const data = await res.json();
-          contador = String(data.id).padStart(4, "0");
-          document.getElementById("numRel").innerText = contador;
-          localStorage.setItem("contadorRel", contador);
-        }
-      } catch (e) {
-        console.warn('Usando contador em cache (offline).');
-        // Se contador continuar "----" e offline, gera um fallback
-        if (contador === "----") {
-          const now = new Date();
-          contador = now.getFullYear().toString().slice(-2) + now.getHours().toString() + now.getMinutes().toString();
-          document.getElementById("numRel").innerText = contador;
-        }
+        const partes = token.split(".");
+        if (partes.length !== 2) return false;
+        const payload = JSON.parse(atob(partes[0].replace(/-/g, "+").replace(/_/g, "/")));
+        return Number(payload.exp) * 1000 > Date.now() + 60_000;
+      } catch {
+        return false;
       }
     }
 
-    // Inicia a busca pelo ID real assim que a página carrega
-    fetchCounter();
+    async function obterTokenAcesso() {
+      if (SERVIDOR_LOCAL) return null;
 
-    if (!document.getElementById("dataInicio").value) {
-      document.getElementById("dataInicio").value = new Date().toISOString().split("T")[0];
+      const tokenSalvo = localStorage.getItem(ACCESS_TOKEN_KEY);
+      if (tokenSalvo && accessTokenValido(tokenSalvo)) return tokenSalvo;
+      localStorage.removeItem(ACCESS_TOKEN_KEY);
+
+      const codigo = await solicitarCodigoAcesso();
+      if (!codigo) {
+        const erro = new Error("Autenticação cancelada.");
+        erro.code = "ACCESS_CANCELLED";
+        throw erro;
+      }
+
+      let resposta;
+      try {
+        resposta = await fetch(ACCESS_AUTH_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: codigo })
+        });
+      } catch (erro) {
+        erro.code = "AUTH_NETWORK";
+        throw erro;
+      }
+
+      const resultado = await resposta.json().catch(() => ({}));
+      if (!resposta.ok || typeof resultado.token !== "string") {
+        const erro = new Error(resultado.error || "Não foi possível validar o código de acesso.");
+        erro.code = resposta.status === 401 ? "AUTH_INVALID"
+          : resposta.status === 503 ? "AUTH_CONFIG"
+            : resposta.status === 429 ? "AUTH_RATE_LIMIT" : "AUTH_FAILED";
+        throw erro;
+      }
+
+      localStorage.setItem(ACCESS_TOKEN_KEY, resultado.token);
+      return resultado.token;
     }
 
-    /* ================= ASSINATURA (FIXED & PERSISTENT) ================= */
-    const canvas = document.getElementById("sigCanvas");
-    const ctx = canvas.getContext("2d");
-    const sigInfo = document.getElementById("sigInfo");
-    const storageKey = 'sig_backup_main';
-    const ratio = window.devicePixelRatio || 1;
-    let drawing = false;
-    let hasSignature = false;
-
-    function saveToStorage() {
-      localStorage.setItem(storageKey, canvas.toDataURL());
+    function tamanhoFormularioBytes(formData) {
+      let total = 64 * 1024;
+      for (const [, valor] of formData.entries()) {
+        total += valor instanceof Blob ? valor.size : new Blob([valor]).size;
+      }
+      return total;
     }
 
-    function loadFromStorage() {
-      const data = localStorage.getItem(storageKey);
-      if (data) {
-        const img = new Image();
-        img.src = data;
-        img.onload = () => {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(img, 0, 0, canvas.offsetWidth, canvas.offsetHeight);
-          hasSignature = true;
-          sigInfo.textContent = "Assinatura registrada";
-          sigInfo.classList.add("signed");
+
+    let contador = Number(localStorage.getItem("contadorRel") || 1);
+    document.getElementById("numRel").innerText = String(contador).padStart(4, "0");
+    document.getElementById("dataInicio").value = new Date().toISOString().split("T")[0];
+
+    const formatarMoeda = valor => new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL"
+    }).format(valor);
+    const paraCentavos = valor => Math.round(Math.max(0, Number(valor) || 0) * 100);
+    ["horaInicio", "horaFim"].forEach(id => {
+      document.getElementById(id).addEventListener("input", event => {
+        const digitos = event.target.value.replace(/\D/g, "").slice(0, 4);
+        event.target.value = digitos.length > 2
+          ? `${digitos.slice(0, 2)}:${digitos.slice(2)}`
+          : digitos;
+      });
+    });
+    const BANCO_LOCAL = "tecnomed-relatorios";
+    let promessaBancoLocal;
+
+    function abrirBancoLocal() {
+      if (!window.indexedDB) return Promise.reject(new Error("Armazenamento local não disponível neste navegador."));
+      if (!promessaBancoLocal) {
+        promessaBancoLocal = new Promise((resolve, reject) => {
+          const pedido = indexedDB.open(BANCO_LOCAL, 2);
+          pedido.onupgradeneeded = () => {
+            const banco = pedido.result;
+            if (!banco.objectStoreNames.contains("rascunhos")) {
+              banco.createObjectStore("rascunhos", { keyPath: "id" });
+            }
+            if (!banco.objectStoreNames.contains("filaOffline")) {
+              banco.createObjectStore("filaOffline", { keyPath: "id" });
+            }
+            if (!banco.objectStoreNames.contains("relatorios")) {
+              banco.createObjectStore("relatorios", { keyPath: "id" });
+            }
+            if (!banco.objectStoreNames.contains("config")) {
+              banco.createObjectStore("config", { keyPath: "id" });
+            }
+          };
+          pedido.onsuccess = () => {
+            const banco = pedido.result;
+            banco.onversionchange = () => {
+              banco.close();
+              promessaBancoLocal = null;
+            };
+            resolve(banco);
+          };
+          pedido.onerror = () => reject(pedido.error);
+          pedido.onblocked = () => console.warn("Feche outras abas antigas do Tecnomed para atualizar o banco local.");
+        });
+      }
+      return promessaBancoLocal;
+    }
+
+    async function acessarBancoLocal(nomeStore, modo, acao) {
+      const banco = await abrirBancoLocal();
+      return new Promise((resolve, reject) => {
+        const transacao = banco.transaction(nomeStore, modo);
+        let resultado;
+        transacao.oncomplete = () => resolve(resultado);
+        transacao.onerror = () => reject(transacao.error);
+        transacao.onabort = () => reject(transacao.error || new Error("Operação local cancelada."));
+        try {
+          const pedido = acao(transacao.objectStore(nomeStore));
+          if (pedido) {
+            pedido.onsuccess = () => { resultado = pedido.result; };
+          }
+        } catch (erro) {
+          transacao.abort();
+          reject(erro);
+        }
+      });
+    }
+
+    const lerRegistroLocal = (store, id) => acessarBancoLocal(store, "readonly", tabela => tabela.get(id));
+    const listarRegistrosLocais = store => acessarBancoLocal(store, "readonly", tabela => tabela.getAll());
+    const gravarRegistroLocal = (store, registro) => acessarBancoLocal(store, "readwrite", tabela => tabela.put(registro));
+    const apagarRegistroLocal = (store, id) => acessarBancoLocal(store, "readwrite", tabela => tabela.delete(id));
+
+    async function gravarHistoricoRelatorio(dados, status, pdfBlob = null) {
+      const atual = await lerRegistroLocal("relatorios", dados.id);
+      const agora = Date.now();
+      await gravarRegistroLocal("relatorios", {
+        id: dados.id,
+        dados,
+        status,
+        criadoEm: atual?.criadoEm || agora,
+        atualizadoEm: agora,
+        ...((pdfBlob || atual?.pdf) ? { pdf: pdfBlob || atual.pdf } : {})
+      });
+    }
+
+    async function reservarNumeroRelatorio() {
+      const banco = await abrirBancoLocal();
+      return new Promise((resolve, reject) => {
+        const transacao = banco.transaction(["config", "relatorios", "filaOffline"], "readwrite");
+        const tabelaConfig = transacao.objectStore("config");
+        let proximoNumero = 1;
+        let dadosConfig;
+        let historico = [];
+        let fila = [];
+        let leiturasPendentes = 3;
+
+        function finalizarLeituras() {
+          leiturasPendentes -= 1;
+          if (leiturasPendentes) return;
+          const proximoSalvo = Number(dadosConfig?.proximo) || 1;
+          const proximoLocal = Number(localStorage.getItem("contadorRel")) || 1;
+          const idsExistentes = [...historico, ...fila].map(registro =>
+            Number(registro.dados?.id ?? registro.id)
+          ).filter(Number.isFinite);
+          const maiorExistente = idsExistentes.length ? Math.max(...idsExistentes) + 1 : 1;
+          proximoNumero = Math.max(proximoSalvo, proximoLocal, maiorExistente, 1);
+          tabelaConfig.put({ id: "contadorRel", proximo: proximoNumero + 1 });
+        }
+
+        const pedidoConfig = tabelaConfig.get("contadorRel");
+        pedidoConfig.onsuccess = () => { dadosConfig = pedidoConfig.result; finalizarLeituras(); };
+        const pedidoHistorico = transacao.objectStore("relatorios").getAll();
+        pedidoHistorico.onsuccess = () => { historico = pedidoHistorico.result; finalizarLeituras(); };
+        const pedidoFila = transacao.objectStore("filaOffline").getAll();
+        pedidoFila.onsuccess = () => { fila = pedidoFila.result; finalizarLeituras(); };
+        transacao.oncomplete = () => {
+          localStorage.setItem("contadorRel", String(proximoNumero + 1));
+          resolve(proximoNumero);
         };
-      }
+        transacao.onerror = () => reject(transacao.error);
+        transacao.onabort = () => reject(transacao.error || new Error("Não foi possível reservar o número do relatório."));
+      });
     }
 
-    function resize() {
-      const data = canvas.toDataURL();
-      canvas.width = canvas.offsetWidth * ratio;
-      canvas.height = canvas.offsetHeight * ratio;
-      ctx.scale(ratio, ratio);
-      ctx.lineWidth = 3;
-      ctx.lineCap = "round";
-      ctx.strokeStyle = "#000";
+    function adicionarLinhaPeca() {
+      const linha = document.createElement("tr");
 
-      const img = new Image();
-      const storedData = localStorage.getItem(storageKey);
-      img.src = data.length > 2000 ? data : (storedData || "");
-      img.onload = () => {
-        ctx.drawImage(img, 0, 0, canvas.offsetWidth, canvas.offsetHeight);
+      function criarCampo(tipo, nome, valor = "") {
+        const campo = document.createElement("input");
+        campo.type = tipo;
+        campo.className = "form-control form-control-sm";
+        campo.setAttribute("aria-label", nome);
+        campo.dataset.campo = nome;
+        campo.value = valor;
+        if (tipo === "number") {
+          campo.min = nome === "quantidade" ? "1" : "0";
+          campo.step = nome === "quantidade" ? "1" : "0.01";
+          campo.inputMode = "decimal";
+        }
+        return campo;
+      }
+
+      const descricao = document.createElement("td");
+      descricao.appendChild(criarCampo("text", "descricao", ""));
+      linha.appendChild(descricao);
+
+      const quantidade = document.createElement("td");
+      quantidade.appendChild(criarCampo("number", "quantidade", "1"));
+      linha.appendChild(quantidade);
+
+      const valorUnitario = document.createElement("td");
+      valorUnitario.appendChild(criarCampo("number", "valorUnitario", ""));
+      linha.appendChild(valorUnitario);
+
+      const subtotal = document.createElement("td");
+      const saidaSubtotal = document.createElement("output");
+      saidaSubtotal.className = "text-nowrap";
+      saidaSubtotal.dataset.campo = "subtotal";
+      saidaSubtotal.textContent = formatarMoeda(0);
+      subtotal.appendChild(saidaSubtotal);
+      linha.appendChild(subtotal);
+
+      const acao = document.createElement("td");
+      const remover = document.createElement("button");
+      remover.type = "button";
+      remover.className = "btn btn-sm btn-outline-danger";
+      remover.dataset.acao = "remover-peca";
+      remover.setAttribute("aria-label", "Remover peça");
+      remover.textContent = "Remover";
+      acao.appendChild(remover);
+      linha.appendChild(acao);
+
+      document.getElementById("listaPecas").appendChild(linha);
+      atualizarResumoValores();
+    }
+
+    function calcularValores() {
+      let subtotalPecasCentavos = 0;
+      const pecas = Array.from(document.querySelectorAll("#listaPecas tr")).flatMap(linha => {
+        const descricao = linha.querySelector('[data-campo="descricao"]').value.trim();
+        const quantidade = Math.max(1, Math.floor(Number(linha.querySelector('[data-campo="quantidade"]').value) || 1));
+        const valorUnitarioCentavos = paraCentavos(linha.querySelector('[data-campo="valorUnitario"]').value);
+        const subtotalCentavos = quantidade * valorUnitarioCentavos;
+        linha.querySelector('[data-campo="subtotal"]').textContent = formatarMoeda(subtotalCentavos / 100);
+        if (!descricao) return [];
+        subtotalPecasCentavos += subtotalCentavos;
+        return [{
+          descricao,
+          quantidade,
+          valorUnitario: valorUnitarioCentavos / 100,
+          subtotal: subtotalCentavos / 100
+        }];
+      });
+
+      const valorMaoObraCentavos = paraCentavos(document.getElementById("valorMaoObra").value);
+      const valorDeslocamentoCentavos = paraCentavos(document.getElementById("valorDeslocamento").value);
+      const subtotalCentavos = subtotalPecasCentavos + valorMaoObraCentavos + valorDeslocamentoCentavos;
+      const tipoDesconto = document.getElementById("tipoDesconto").value;
+      const valorDescontoInformado = Math.max(0, Number(document.getElementById("valorDesconto").value) || 0);
+      const descontoCentavos = tipoDesconto === "percentual"
+        ? Math.round(subtotalCentavos * Math.min(valorDescontoInformado, 100) / 100)
+        : Math.min(subtotalCentavos, paraCentavos(valorDescontoInformado));
+
+      return {
+        pecas,
+        valorPecas: subtotalPecasCentavos / 100,
+        valorMaoObra: valorMaoObraCentavos / 100,
+        valorDeslocamento: valorDeslocamentoCentavos / 100,
+        subtotal: subtotalCentavos / 100,
+        tipoDesconto,
+        valorDescontoInformado,
+        valorDesconto: descontoCentavos / 100,
+        valorTotal: (subtotalCentavos - descontoCentavos) / 100
       };
     }
 
-    window.addEventListener("resize", resize);
-    window.addEventListener("pageshow", loadFromStorage);
-    setTimeout(resize, 100);
-
-    function getPos(e) {
-      const rect = canvas.getBoundingClientRect();
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      return { x: clientX - rect.left, y: clientY - rect.top };
+    function atualizarResumoValores() {
+      const valores = calcularValores();
+      document.getElementById("subtotalPecas").textContent = formatarMoeda(valores.valorPecas);
+      document.getElementById("subtotalGeral").textContent = formatarMoeda(valores.subtotal);
+      document.getElementById("descontoAplicado").textContent = formatarMoeda(valores.valorDesconto);
+      document.getElementById("valorTotal").textContent = formatarMoeda(valores.valorTotal);
     }
 
-    function start(e) {
-      if (e.target !== canvas) return;
-      e.preventDefault();
-      drawing = true;
-      const pos = getPos(e);
-      ctx.beginPath();
-      ctx.moveTo(pos.x, pos.y);
-      hasSignature = true;
-      sigInfo.textContent = "Assinatura registrada";
-      sigInfo.classList.add("signed");
-    }
-
-    function move(e) {
-      if (!drawing) return;
-      e.preventDefault();
-      const pos = getPos(e);
-      ctx.lineTo(pos.x, pos.y);
-      ctx.stroke();
-    }
-
-    function stop() {
-      if (drawing) {
-        drawing = false;
-        saveToStorage();
-      }
-    }
-
-    canvas.addEventListener("touchstart", start, { passive: false });
-    canvas.addEventListener("mousedown", start);
-    canvas.addEventListener("touchmove", move, { passive: false });
-    canvas.addEventListener("mousemove", move);
-    window.addEventListener("touchend", stop);
-    window.addEventListener("mouseup", stop);
-
-    document.getElementById("btnLimpar").onclick = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      localStorage.removeItem(storageKey);
-      hasSignature = false;
-      sigInfo.textContent = "Toque e arraste para assinar";
-      sigInfo.classList.remove("signed");
-    };
-
-    /* ================= PERSISTÊNCIA TOTAL (OFFLINE) ================= */
-    const formFields = ["nomeCliente", "telefone", "emailCliente", "responsavel", "solicitante", "equipamento", "endereco", "cidade", "estado", "defeito", "tipoServico", "descricao", "dataInicio", "horaInicio", "horaFim", "techName", "materiais", "observacoes"];
-
-    // Salva automaticamente ao digitar
-    function saveFormData() {
-      const data = {};
-      formFields.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) data[id] = el.value;
-      });
-      localStorage.setItem("tecnomed_form_backup", JSON.stringify(data));
-    }
-
-    // Carrega dados salvos ao abrir
-    function loadFormData() {
-      const saved = localStorage.getItem("tecnomed_form_backup");
-      if (saved) {
-        const data = JSON.parse(saved);
-        Object.keys(data).forEach(id => {
-          const el = document.getElementById(id);
-          if (el) el.value = data[id];
-        });
-      }
-    }
-
-    document.querySelectorAll("input, textarea, select").forEach(el => {
-      el.addEventListener("input", saveFormData);
-    });
-
-    window.addEventListener("load", loadFormData);
-
-    /* ================= FOTOS ================= */
-    const fotosInput = document.getElementById("fotos");
-    const fotosPreview = document.getElementById("fotosPreview");
-    let photosList = [];
-    const MAX_PHOTOS = 10;
-
-    function renderPhotos() {
-      fotosPreview.innerHTML = "";
-      photosList.forEach((file, index) => {
-        const reader = new FileReader();
-        reader.onload = function (e) {
-          const div = document.createElement("div");
-          div.className = "photo-item";
-          const img = document.createElement("img");
-          img.src = e.target.result;
-          const btnRemove = document.createElement("button");
-          btnRemove.innerHTML = "&times;";
-          btnRemove.className = "remove-btn";
-          btnRemove.style = "position:absolute;top:-5px;right:-5px;background:red;color:white;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;";
-          btnRemove.onclick = () => { photosList.splice(index, 1); renderPhotos(); };
-          div.appendChild(img);
-          div.appendChild(btnRemove);
-          fotosPreview.appendChild(div);
-        };
-        reader.readAsDataURL(file);
-      });
-      fotosInput.disabled = (photosList.length >= MAX_PHOTOS);
-    }
-
-    fotosInput.addEventListener("change", function () {
-      if (this.files) {
-        Array.from(this.files).forEach(f => {
-          if (photosList.length < MAX_PHOTOS) photosList.push(f);
-        });
-        renderPhotos();
-        this.value = "";
+    document.getElementById("btnAdicionarPeca").addEventListener("click", adicionarLinhaPeca);
+    document.getElementById("listaPecas").addEventListener("input", atualizarResumoValores);
+    document.getElementById("listaPecas").addEventListener("click", event => {
+      const botaoRemover = event.target.closest('[data-acao="remover-peca"]');
+      if (botaoRemover) {
+        botaoRemover.closest("tr").remove();
+        atualizarResumoValores();
       }
     });
 
-    /* ================= PDF (REFINED PROFESSIONAL LAYOUT) ================= */
-    async function gerarPDF() {
-      const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF();
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
+    ["valorMaoObra", "valorDeslocamento", "valorDesconto"].forEach(id => {
+      document.getElementById(id).addEventListener("input", atualizarResumoValores);
+    });
+    document.getElementById("tipoDesconto").addEventListener("change", () => {
+      const percentual = document.getElementById("tipoDesconto").value === "percentual";
+      document.querySelector('label[for="valorDesconto"]').textContent = percentual ? "Percentual (%)" : "Valor (R$)";
+      document.getElementById("valorDesconto").max = percentual ? "100" : "";
+      atualizarResumoValores();
+    });
 
-      const azul = [0, 86, 179];
-      const cinzaClaro = [245, 245, 245];
+    adicionarLinhaPeca();
 
-      // Cabeçalho Profissional
-      pdf.setFillColor(...azul);
-      pdf.rect(0, 0, 210, 40, 'F');
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFontSize(22);
-      pdf.setFont("helvetica", "bold");
-      pdf.text("TECNOMED", 15, 20);
-      pdf.setFontSize(10);
-      pdf.setFont("helvetica", "normal");
-      pdf.text("ASSISTÊNCIA TÉCNICA E MANUTENÇÃO", 15, 28);
-      pdf.text("Serviços Especializados em Equipamentos Odontológicos", 15, 33);
-      pdf.setFontSize(12);
-      pdf.text(`RELATÓRIO Nº ${contador}`, 155, 25);
+    // ========== ASSINATURAS ==========
+    function criarAssinaturaPad(canvasId, infoId, botaoLimparId) {
+      const canvasAssinatura = document.getElementById(canvasId);
+      const contexto = canvasAssinatura.getContext("2d");
+      const info = document.getElementById(infoId);
+      let desenhando = false;
+      let assinada = false;
 
-      let y = 50;
+      function ajustarCanvas() {
+        const rect = canvasAssinatura.getBoundingClientRect();
+        const ratio = window.devicePixelRatio || 1;
+        const imagemAtual = assinada ? canvasAssinatura.toDataURL() : null;
 
-      function drawSection(title) {
-        if (y > 260) { pdf.addPage(); y = 20; }
-        pdf.setFillColor(...cinzaClaro);
-        pdf.rect(10, y, 190, 8, 'F');
-        pdf.setTextColor(0, 0, 0);
-        pdf.setFontSize(10);
-        pdf.setFont("helvetica", "bold");
-        pdf.text(title.toUpperCase(), 14, y + 6);
-        y += 12;
-      }
+        canvasAssinatura.width = rect.width * ratio;
+        canvasAssinatura.height = rect.height * ratio;
+        contexto.setTransform(ratio, 0, 0, ratio, 0, 0);
+        contexto.fillStyle = "#fff";
+        contexto.fillRect(0, 0, rect.width, rect.height);
+        contexto.strokeStyle = "#000";
+        contexto.lineWidth = 3.5;
+        contexto.lineCap = "round";
+        contexto.lineJoin = "round";
 
-      function drawField(label, value, xOffset = 15, width = 180) {
-        if (y > 280) { pdf.addPage(); y = 20; }
-        pdf.setFontSize(9);
-        pdf.setFont("helvetica", "bold");
-        const labelText = `${label}: `;
-        pdf.text(labelText, xOffset, y);
-
-        pdf.setFont("helvetica", "normal");
-        const labelWidth = pdf.getTextWidth(labelText) + 2;
-        const valStr = String(value || "-");
-        const splitVal = pdf.splitTextToSize(valStr, width - labelWidth);
-
-        pdf.text(splitVal, xOffset + labelWidth, y);
-        y += (splitVal.length * 5) + 3; // Incremento automático
-      }
-
-      drawSection("Dados do Cliente");
-      drawField("Cliente", document.getElementById("nomeCliente").value);
-      drawField("Email", document.getElementById("emailCliente").value);
-      drawField("Telefone", document.getElementById("telefone").value);
-      drawField("Endereço", `${document.getElementById("endereco").value} - ${document.getElementById("cidade").value}/${document.getElementById("estado").value}`);
-      y += 2;
-
-      drawSection("Informações do Serviço");
-      drawField("Equipamento", document.getElementById("equipamento").value);
-      drawField("Responsável", document.getElementById("responsavel").value);
-      drawField("Tipo de Manutenção", document.getElementById("tipoServico").value);
-      drawField("Solicitante", document.getElementById("solicitante").value);
-      y += 2;
-
-      drawSection("Relatório Técnico");
-      pdf.setFontSize(10);
-      pdf.setFont("helvetica", "bold");
-      pdf.text("Descrição do Serviço:", 15, y);
-      y += 6;
-      pdf.setFont("helvetica", "normal");
-      pdf.setFontSize(9);
-      const descLines = pdf.splitTextToSize(document.getElementById("descricao").value, 180);
-      pdf.text(descLines, 15, y);
-      y += (descLines.length * 5) + 6;
-
-      if (document.getElementById("defeito").value) {
-        drawField("Defeito", document.getElementById("defeito").value);
-      }
-      if (document.getElementById("materiais").value) {
-        drawField("Materiais", document.getElementById("materiais").value);
-      }
-      if (document.getElementById("observacoes").value) {
-        drawField("Observações", document.getElementById("observacoes").value);
-      }
-      y += 5;
-
-      drawSection("Horários e Execução");
-      pdf.text(`Data: ${document.getElementById("dataInicio").value.split('-').reverse().join('/')}`, 15, y);
-      pdf.text(`Início: ${document.getElementById("horaInicio").value}`, 80, y);
-      pdf.text(`Término: ${document.getElementById("horaFim").value}`, 140, y);
-      y += 8;
-      pdf.text(`Técnico Responsável: ${document.getElementById("techName").value}`, 15, y);
-
-      // Assinatura
-      if (hasSignature) {
-        y += 15;
-        if (y > 230) { pdf.addPage(); y = 20; }
-        pdf.setFont("helvetica", "bold");
-        pdf.text("ASSINATURA DO CLIENTE", 105, y, { align: "center" });
-        y += 5;
-        try {
-          const imgData = canvas.toDataURL("image/png");
-          pdf.addImage(imgData, 'PNG', 65, y, 80, 25);
-          y += 28;
-          pdf.line(60, y, 150, y);
-          y += 5;
-          pdf.setFontSize(8);
-          pdf.setFont("helvetica", "normal");
-          pdf.text("Declaro que o serviço acima foi executado e testado em minha presença.", 105, y, { align: "center" });
-        } catch (e) { }
-      }
-
-      // Fotos
-      if (photosList.length > 0) {
-        pdf.addPage();
-        pdf.setFont("helvetica", "bold");
-        pdf.setFontSize(14);
-        pdf.text("ANEXOS FOTOGRÁFICOS", 105, 15, { align: "center" });
-        let yPos = 25;
-        for (let file of photosList) {
-          const imgData = await new Promise(r => {
-            const rd = new FileReader();
-            rd.onload = () => r(rd.result);
-            rd.readAsDataURL(file);
-          });
-          if (yPos + 80 > pageHeight - 15) { pdf.addPage(); yPos = 20; }
-          pdf.addImage(imgData, "JPEG", 25, yPos, 160, 80);
-          yPos += 90;
+        if (imagemAtual) {
+          const imagem = new Image();
+          imagem.onload = () => contexto.drawImage(imagem, 0, 0, rect.width, rect.height);
+          imagem.src = imagemAtual;
         }
       }
 
-      // Footer
-      const pageCount = pdf.internal.getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
-        pdf.setPage(i);
+      function getPos(event) {
+        const rect = canvasAssinatura.getBoundingClientRect();
+        return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+      }
+
+      canvasAssinatura.addEventListener("pointerdown", event => {
+        event.preventDefault();
+        canvasAssinatura.setPointerCapture(event.pointerId);
+        desenhando = true;
+        const posicao = getPos(event);
+        contexto.beginPath();
+        contexto.moveTo(posicao.x, posicao.y);
+      });
+
+      canvasAssinatura.addEventListener("pointermove", event => {
+        if (!desenhando) return;
+        event.preventDefault();
+        const posicao = getPos(event);
+        contexto.lineTo(posicao.x, posicao.y);
+        contexto.stroke();
+        if (!assinada) {
+          assinada = true;
+          info.textContent = "✅ ASSINATURA REGISTRADA!";
+          info.className = "sig-info signed";
+        }
+      });
+
+      function encerrarDesenho(event) {
+        desenhando = false;
+        if (canvasAssinatura.hasPointerCapture(event.pointerId)) {
+          canvasAssinatura.releasePointerCapture(event.pointerId);
+        }
+      }
+
+      canvasAssinatura.addEventListener("pointerup", encerrarDesenho);
+      canvasAssinatura.addEventListener("pointercancel", encerrarDesenho);
+      canvasAssinatura.addEventListener("lostpointercapture", () => { desenhando = false; });
+      document.getElementById(botaoLimparId).addEventListener("click", () => {
+        const rect = canvasAssinatura.getBoundingClientRect();
+        contexto.clearRect(0, 0, rect.width, rect.height);
+        contexto.fillStyle = "#fff";
+        contexto.fillRect(0, 0, rect.width, rect.height);
+        assinada = false;
+        info.textContent = "TOQUE/CLIQUE E ARRASTE PARA ASSINAR";
+        info.className = "sig-info";
+      });
+
+      ajustarCanvas();
+      window.addEventListener("resize", ajustarCanvas);
+      window.addEventListener("orientationchange", () => setTimeout(ajustarCanvas, 300));
+
+      return {
+        temAssinatura: () => assinada,
+        pegarAssinatura: () => {
+          if (!assinada) return null;
+          const rect = canvasAssinatura.getBoundingClientRect();
+          const escalaExportacao = Math.min(window.devicePixelRatio || 1, 2);
+          const imagem = document.createElement("canvas");
+          imagem.width = Math.max(1, Math.round(rect.width * escalaExportacao));
+          imagem.height = Math.max(1, Math.round(rect.height * escalaExportacao));
+          const contextoImagem = imagem.getContext("2d");
+          contextoImagem.drawImage(
+            canvasAssinatura,
+            0, 0, canvasAssinatura.width, canvasAssinatura.height,
+            0, 0, imagem.width, imagem.height
+          );
+          return imagem.toDataURL("image/png");
+        },
+        restaurar: imagemData => {
+          if (typeof imagemData !== "string" || !imagemData.startsWith("data:image/png;base64,")) return;
+          const imagem = new Image();
+          imagem.onload = () => {
+            const rect = canvasAssinatura.getBoundingClientRect();
+            contexto.drawImage(imagem, 0, 0, rect.width, rect.height);
+            assinada = true;
+            info.textContent = "✅ ASSINATURA REGISTRADA!";
+            info.className = "sig-info signed";
+          };
+          imagem.src = imagemData;
+        },
+        canvas: canvasAssinatura
+      };
+    }
+
+    const assinaturaCliente = criarAssinaturaPad("sigCanvas", "sigInfo", "btnLimparCliente");
+    const assinaturaTecnico = criarAssinaturaPad("sigCanvasTecnico", "sigInfoTecnico", "btnLimparTecnico");
+
+    // ========== FOTOS ==========
+    let fotosRascunhoSalvas = [];
+
+    function mostrarFotosPreview(fotos) {
+      const preview = document.getElementById("fotosPreview");
+      preview.replaceChildren();
+      fotos.forEach(foto => {
+        const img = document.createElement("img");
+        img.src = foto;
+        img.alt = "Foto anexada ao relatório";
+        preview.appendChild(img);
+      });
+    }
+
+    document.getElementById("fotos").addEventListener("change", async () => {
+      await lerFotos(true);
+      mostrarFotosPreview(fotosRascunhoSalvas);
+      programarSalvamentoRascunho();
+    });
+
+    async function lerFotos(forcarLeitura = false) {
+      const files = document.getElementById("fotos").files;
+      if (files.length && (forcarLeitura || fotosRascunhoSalvas.length !== files.length)) {
+        fotosRascunhoSalvas = [];
+        for (const file of files) {
+          fotosRascunhoSalvas.push(await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(file);
+          }));
+        }
+      }
+      return fotosRascunhoSalvas;
+    }
+
+    async function anexarFotosFormulario(formData, fotos) {
+      for (const [indice, fotoDataUrl] of (fotos || []).entries()) {
+        const resposta = await fetch(fotoDataUrl);
+        const fotoBlob = await resposta.blob();
+        if (!fotoBlob.type.startsWith("image/")) continue;
+        const extensao = fotoBlob.type.split("/")[1] || "jpg";
+        formData.append(`foto_${indice}`, fotoBlob, `foto_${indice}.${extensao}`);
+      }
+    }
+
+    // ========== ALERTAS E FUNÇÕES AUXILIARES ==========
+    function mostrarAlerta(msg, tipo = "info", duracao = 7000) {
+      const div = document.createElement("div");
+      div.className = `alert alert-${tipo} alert-dismissible fade show`;
+      div.appendChild(document.createTextNode(msg));
+      const fechar = document.createElement("button");
+      fechar.type = "button";
+      fechar.className = "btn-close";
+      fechar.setAttribute("aria-label", "Fechar");
+      fechar.addEventListener("click", () => div.remove());
+      div.appendChild(fechar);
+      document.getElementById("alertContainer").appendChild(div);
+      setTimeout(() => div.remove(), duracao);
+    }
+
+    function mostrarCarregando(show) {
+      document.getElementById("loadingOverlay").classList.toggle("show", show);
+    }
+
+    function relatorioTemAssinaturasValidas(dados) {
+      const assinaturaCliente = dados?.assinaturaCliente || dados?.assinatura;
+      const assinaturaTecnico = dados?.assinaturaTecnico;
+      const assinaturaPNGValida = assinatura => {
+        const correspondencia = typeof assinatura === "string" &&
+          assinatura.match(/^data:image\/png;base64,([A-Za-z0-9+/]+={0,2})$/);
+        if (!correspondencia) return false;
+        try {
+          const bytes = Uint8Array.from(atob(correspondencia[1]), caractere => caractere.charCodeAt(0));
+          return bytes.length >= 8 &&
+            [137, 80, 78, 71, 13, 10, 26, 10].every((byte, indice) => bytes[indice] === byte);
+        } catch {
+          return false;
+        }
+      };
+
+      return assinaturaPNGValida(assinaturaCliente) && assinaturaPNGValida(assinaturaTecnico);
+    }
+
+    function validar() {
+      const form = document.getElementById("formRel");
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        return false;
+      }
+      if (!assinaturaCliente.temAssinatura()) {
+        mostrarAlerta("⚠️ Por favor, faça a assinatura do cliente!", "warning");
+        assinaturaCliente.canvas.scrollIntoView({ behavior: "smooth" });
+        return false;
+      }
+      if (!assinaturaTecnico.temAssinatura()) {
+        mostrarAlerta("⚠️ Por favor, faça a assinatura do técnico!", "warning");
+        assinaturaTecnico.canvas.scrollIntoView({ behavior: "smooth" });
+        return false;
+      }
+      if (!relatorioTemAssinaturasValidas({
+        assinatura: assinaturaCliente.pegarAssinatura(),
+        assinaturaTecnico: assinaturaTecnico.pegarAssinatura()
+      })) {
+        mostrarAlerta("⚠️ As duas assinaturas precisam estar registradas.", "warning");
+        return false;
+      }
+      return true;
+    }
+
+    async function capturarDadosFormulario(idRelatorio = contador) {
+      return {
+        id: idRelatorio,
+        cliente: document.getElementById("nomeCliente").value.trim(),
+        emailCliente: document.getElementById("emailCliente").value.trim(),
+        telefone: document.getElementById("telefone").value.trim(),
+        responsavel: document.getElementById("responsavel").value.trim(),
+        solicitante: document.getElementById("solicitante").value.trim(),
+        equipamentoNome: document.getElementById("nomeEquipamento").value.trim(),
+        equipamentoModelo: document.getElementById("modeloEquipamento").value.trim(),
+        equipamentoNumeroSerie: document.getElementById("numeroSerieEquipamento").value.trim(),
+        equipamentoPatrimonio: document.getElementById("patrimonioEquipamento").value.trim(),
+        endereco: document.getElementById("endereco").value.trim(),
+        cidade: document.getElementById("cidade").value.trim(),
+        estado: document.getElementById("estado").value.trim().toUpperCase(),
+        defeito: document.getElementById("defeito").value.trim(),
+        tipoServico: document.getElementById("tipoServico").value,
+        descricao: document.getElementById("descricao").value.trim(),
+        data: document.getElementById("dataInicio").value,
+        horaInicio: document.getElementById("horaInicio").value,
+        horaFim: document.getElementById("horaFim").value,
+        tecnico: document.getElementById("techName").value.trim(),
+        ...calcularValores(),
+        observacoes: document.getElementById("observacoes").value.trim(),
+        assinatura: assinaturaCliente.pegarAssinatura(),
+        assinaturaTecnico: assinaturaTecnico.pegarAssinatura(),
+        fotos: await lerFotos()
+      };
+    }
+
+    async function montarDados(reservarNumero = false) {
+      if (!validar()) return null;
+      if (!reservarNumero) return capturarDadosFormulario();
+
+      const numeroReservado = await reservarNumeroRelatorio();
+      contador = numeroReservado + 1;
+      document.getElementById("numRel").innerText = String(numeroReservado).padStart(4, "0");
+      return capturarDadosFormulario(numeroReservado);
+    }
+
+    function atualizarStatusConexao(texto) {
+      const status = document.getElementById("statusConexao");
+      status.textContent = texto || (navigator.onLine ? "Conectado" : "Offline: salvamento local disponível");
+      status.className = `badge ${navigator.onLine ? "text-bg-success" : "text-bg-warning"}`;
+    }
+
+    async function salvarRascunhoNoAparelho(confirmar = false) {
+      const dados = await capturarDadosFormulario();
+      await gravarRegistroLocal("rascunhos", {
+        id: "atual",
+        dados,
+        atualizadoEm: Date.now()
+      });
+      atualizarStatusConexao("Rascunho salvo neste celular");
+      if (confirmar) mostrarAlerta("✅ Rascunho salvo neste celular.", "success");
+      return dados;
+    }
+
+    async function restaurarRascunhoDoAparelho() {
+      const registro = await lerRegistroLocal("rascunhos", "atual");
+      if (!registro?.dados) return false;
+
+      const dados = registro.dados;
+      const campos = {
+        nomeCliente: dados.cliente,
+        emailCliente: dados.emailCliente,
+        telefone: dados.telefone,
+        responsavel: dados.responsavel,
+        solicitante: dados.solicitante,
+        nomeEquipamento: dados.equipamentoNome || dados.equipamento,
+        modeloEquipamento: dados.equipamentoModelo,
+        numeroSerieEquipamento: dados.equipamentoNumeroSerie,
+        patrimonioEquipamento: dados.equipamentoPatrimonio,
+        endereco: dados.endereco,
+        cidade: dados.cidade,
+        estado: dados.estado,
+        defeito: dados.defeito,
+        tipoServico: dados.tipoServico,
+        descricao: dados.descricao,
+        dataInicio: dados.data,
+        horaInicio: dados.horaInicio,
+        horaFim: dados.horaFim,
+        techName: dados.tecnico,
+        observacoes: dados.observacoes,
+        valorMaoObra: dados.valorMaoObra,
+        valorDeslocamento: dados.valorDeslocamento,
+        tipoDesconto: dados.tipoDesconto,
+        valorDesconto: dados.valorDescontoInformado
+      };
+      Object.entries(campos).forEach(([id, valor]) => {
+        if (valor !== undefined && valor !== null) document.getElementById(id).value = valor;
+      });
+
+      const linhasPecas = document.getElementById("listaPecas");
+      linhasPecas.replaceChildren();
+      const pecas = Array.isArray(dados.pecas) ? dados.pecas : [];
+      (pecas.length ? pecas : [{}]).forEach(peca => {
+        adicionarLinhaPeca();
+        const linha = linhasPecas.lastElementChild;
+        linha.querySelector('[data-campo="descricao"]').value = peca.descricao || "";
+        linha.querySelector('[data-campo="quantidade"]').value = peca.quantidade || 1;
+        linha.querySelector('[data-campo="valorUnitario"]').value = peca.valorUnitario ?? "";
+      });
+
+      fotosRascunhoSalvas = Array.isArray(dados.fotos) ? dados.fotos : [];
+      mostrarFotosPreview(fotosRascunhoSalvas);
+      assinaturaCliente.restaurar(dados.assinaturaCliente || dados.assinatura);
+      assinaturaTecnico.restaurar(dados.assinaturaTecnico);
+      document.querySelector('label[for="valorDesconto"]').textContent = dados.tipoDesconto === "percentual"
+        ? "Percentual (%)"
+        : "Valor (R$)";
+      document.getElementById("valorDesconto").max = dados.tipoDesconto === "percentual" ? "100" : "";
+
+      const idRascunho = Number(dados.id);
+      if (Number.isFinite(idRascunho) && idRascunho >= contador) {
+        contador = idRascunho;
+        localStorage.setItem("contadorRel", contador);
+        document.getElementById("numRel").innerText = String(contador).padStart(4, "0");
+      }
+      atualizarResumoValores();
+      atualizarStatusConexao("Rascunho anterior restaurado");
+      return true;
+    }
+
+    let timerSalvamentoRascunho;
+    function programarSalvamentoRascunho() {
+      atualizarStatusConexao("Salvando alterações...");
+      clearTimeout(timerSalvamentoRascunho);
+      timerSalvamentoRascunho = setTimeout(() => {
+        salvarRascunhoNoAparelho().catch(erro => {
+          console.error("Não foi possível salvar o rascunho", erro);
+          atualizarStatusConexao("Falha ao salvar no aparelho");
+        });
+      }, 700);
+    }
+
+    async function removerRascunhoDoAparelho() {
+      clearTimeout(timerSalvamentoRascunho);
+      await apagarRegistroLocal("rascunhos", "atual");
+    }
+
+    document.getElementById("formRel").addEventListener("input", programarSalvamentoRascunho);
+    document.getElementById("formRel").addEventListener("change", programarSalvamentoRascunho);
+    [assinaturaCliente, assinaturaTecnico].forEach(pad => {
+      pad.canvas.addEventListener("pointerup", programarSalvamentoRascunho);
+    });
+    document.getElementById("btnSalvarRascunho").addEventListener("click", async () => {
+      try {
+        await salvarRascunhoNoAparelho(true);
+      } catch (erro) {
+        console.error("Não foi possível salvar o rascunho", erro);
+        mostrarAlerta("❌ Não foi possível salvar no aparelho. Verifique o espaço disponível.", "danger");
+      }
+    });
+
+    // ========== PDF e ENVIO (mesmo código anterior, só simplificado) ==========
+    async function gerarPDF(dados) {
+      if (!relatorioTemAssinaturasValidas(dados)) {
+        throw new Error("As assinaturas do cliente e do técnico são obrigatórias.");
+      }
+
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pecas = Array.isArray(dados.pecas) ? dados.pecas : [];
+      const valorPecas = dados.valorPecas ?? dados.valorMateriais ?? 0;
+      const valorMaoObra = dados.valorMaoObra || 0;
+      const valorDeslocamento = dados.valorDeslocamento || 0;
+      const subtotal = dados.subtotal ?? (valorPecas + valorMaoObra + valorDeslocamento);
+      const valorDesconto = dados.valorDesconto || 0;
+      const valorTotal = dados.valorTotal ?? Math.max(0, subtotal - valorDesconto);
+      const moedaPDF = valor => formatarMoeda(valor).replace(/\u00a0/g, " ");
+      const margem = 15;
+      const largura = pdf.internal.pageSize.getWidth() - margem * 2;
+      const limiteInferior = pdf.internal.pageSize.getHeight() - 18;
+      const numero = String(dados.id).padStart(4, "0");
+      let y = 20;
+
+      pdf.setProperties({ title: `Relatório Tecnomed ${numero}`, subject: "Relatório de manutenção" });
+      pdf.setFillColor(237, 245, 252);
+      pdf.roundedRect(margem, 14, largura, 27, 3, 3, "F");
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(16);
+      pdf.setTextColor(18, 59, 99);
+      pdf.text("TECNOMED", margem + 7, 25);
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(10);
+      pdf.setTextColor(68, 87, 105);
+      pdf.text("Relatório de Manutenção", margem + 7, 33);
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(11);
+      pdf.setTextColor(20, 90, 141);
+      pdf.text(`Nº ${numero}`, margem + largura - 7, 28, { align: "right" });
+      y = 51;
+
+      function garantirEspaco(altura) {
+        if (y + altura <= limiteInferior) return;
+        pdf.addPage();
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(9);
+        pdf.setTextColor(96, 114, 134);
+        pdf.text(`TECNOMED  |  Relatório Nº ${numero}`, margem, 13);
+        pdf.setDrawColor(220, 229, 239);
+        pdf.line(margem, 17, margem + largura, 17);
+        y = 25;
+      }
+
+      function secao(titulo) {
+        garantirEspaco(15);
+        pdf.setFillColor(241, 246, 251);
+        pdf.roundedRect(margem, y - 5, largura, 9, 1.5, 1.5, "F");
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(10);
+        pdf.setTextColor(20, 90, 141);
+        pdf.text(titulo.toLocaleUpperCase("pt-BR"), margem + 3, y + 1);
+        y += 12;
+      }
+
+      function campo(titulo, valor) {
+        const linhas = pdf.splitTextToSize(String(valor || "-"), largura);
+        garantirEspaco(10);
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(9);
+        pdf.setTextColor(57, 75, 93);
+        pdf.text(`${titulo}:`, margem, y);
+        y += 4.5;
+
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(10);
+        pdf.setTextColor(35, 49, 64);
+        linhas.forEach(linha => {
+          garantirEspaco(6);
+          pdf.text(linha, margem, y);
+          y += 5;
+        });
+        y += 2;
+      }
+
+      secao("Equipamento");
+      campo("Nome", dados.equipamentoNome || dados.equipamento);
+      campo("Modelo", dados.equipamentoModelo);
+      campo("Número de série", dados.equipamentoNumeroSerie);
+      campo("Patrimônio", dados.equipamentoPatrimonio);
+
+      secao("Cliente e unidade");
+      campo("Cliente", dados.cliente);
+      campo("Email", dados.emailCliente);
+      campo("Telefone", dados.telefone);
+      campo("Responsável pela unidade", dados.responsavel);
+      campo("Solicitante", dados.solicitante);
+      campo("Endereço", dados.endereco);
+      campo("Cidade / Estado", [dados.cidade, dados.estado].filter(Boolean).join(" / "));
+
+      secao("Atendimento");
+      campo("Tipo de serviço", dados.tipoServico);
+      campo("Data", dados.data);
+      campo("Horário", `${dados.horaInicio || "-"} às ${dados.horaFim || "-"}`);
+      campo("Técnico responsável", dados.tecnico);
+      campo("Defeito relatado", dados.defeito);
+      campo("Serviço executado", dados.descricao);
+
+      secao("Valores do serviço");
+      pecas.forEach(peca => {
+        campo(`Peça: ${peca.descricao}`, `${peca.quantidade} x ${moedaPDF(peca.valorUnitario)} = ${moedaPDF(peca.subtotal)}`);
+      });
+      campo("Subtotal de peças", moedaPDF(valorPecas));
+      campo("Mão de obra", moedaPDF(valorMaoObra));
+      campo("Deslocamento", moedaPDF(valorDeslocamento));
+      campo("Subtotal do serviço", moedaPDF(subtotal));
+      const descricaoDesconto = dados.tipoDesconto === "percentual"
+        ? `${dados.valorDescontoInformado || 0}% (${moedaPDF(valorDesconto)})`
+        : moedaPDF(valorDesconto);
+      campo("Desconto", descricaoDesconto);
+      campo("Valor total", moedaPDF(valorTotal));
+      campo("Observações", dados.observacoes);
+
+      function adicionarAssinatura(titulo, imagem) {
+        garantirEspaco(43);
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(9);
+        pdf.setTextColor(57, 75, 93);
+        pdf.text(titulo, margem, y);
+        y += 4;
+        pdf.addImage(imagem, "PNG", margem, y, 80, 30);
+        y += 34;
+      }
+
+      garantirEspaco(90);
+      secao("Assinaturas");
+      adicionarAssinatura("Cliente", dados.assinaturaCliente || dados.assinatura);
+      adicionarAssinatura("Técnico responsável", dados.assinaturaTecnico);
+
+      const totalPaginas = pdf.getNumberOfPages();
+      for (let pagina = 1; pagina <= totalPaginas; pagina += 1) {
+        pdf.setPage(pagina);
+        pdf.setDrawColor(220, 229, 239);
+        pdf.line(margem, 284, margem + largura, 284);
+        pdf.setFont("helvetica", "normal");
         pdf.setFontSize(8);
-        pdf.setTextColor(150);
-        pdf.text("TECNOMED - Assistência Técnica - Relatório Digital Gerado via Tecnomed Web", 105, 290, { align: "center" });
+        pdf.setTextColor(112, 128, 144);
+        pdf.text(`Relatório Tecnomed Nº ${numero}`, margem, 289);
+        pdf.text(`Página ${pagina} de ${totalPaginas}`, margem + largura, 289, { align: "right" });
       }
 
       return pdf.output("blob");
     }
 
-    /* ================= AÇÕES ================= */
+    let urlPDFAtual = null;
+    async function renderizarPaginasPDF(blob) {
+      const container = document.getElementById("pdfPreviewPages");
+      container.replaceChildren();
+      const status = document.createElement("p");
+      status.className = "text-center text-muted";
+      status.textContent = "Carregando prévia do relatório...";
+      container.appendChild(status);
+
+      try {
+        const pdfjs = await import("./libs/pdf.mjs");
+        pdfjs.GlobalWorkerOptions.workerSrc = new URL("./libs/pdf.worker.mjs", window.location.href).toString();
+        const documento = await pdfjs.getDocument({ data: await blob.arrayBuffer() }).promise;
+        container.replaceChildren();
+
+        for (let numeroPagina = 1; numeroPagina <= documento.numPages; numeroPagina += 1) {
+          const pagina = await documento.getPage(numeroPagina);
+          const escalaBase = pagina.getViewport({ scale: 1 });
+          const larguraDisponivel = Math.max(container.clientWidth - 24, 280);
+          const escala = Math.min(larguraDisponivel / escalaBase.width, 1.5);
+          const viewport = pagina.getViewport({ scale: escala });
+          const canvas = document.createElement("canvas");
+          const contexto = canvas.getContext("2d");
+          const escalaSaida = Math.min(window.devicePixelRatio || 1, 2);
+
+          canvas.width = Math.floor(viewport.width * escalaSaida);
+          canvas.height = Math.floor(viewport.height * escalaSaida);
+          canvas.style.width = `${Math.floor(viewport.width)}px`;
+          canvas.style.height = `${Math.floor(viewport.height)}px`;
+          canvas.setAttribute("aria-label", `Página ${numeroPagina} de ${documento.numPages}`);
+          container.appendChild(canvas);
+
+          await pagina.render({
+            canvasContext: contexto,
+            viewport,
+            transform: escalaSaida === 1 ? null : [escalaSaida, 0, 0, escalaSaida, 0, 0]
+          }).promise;
+        }
+      } catch (erro) {
+        console.error("Falha ao renderizar a prévia PDF", erro);
+        container.replaceChildren();
+        const mensagem = document.createElement("p");
+        mensagem.className = "alert alert-warning text-center";
+        mensagem.textContent = "Não foi possível mostrar a prévia neste navegador. Use Baixar PDF para abrir o arquivo.";
+        container.appendChild(mensagem);
+      }
+    }
+
+    async function abrirPreviaPDF(blob, numero) {
+      if (urlPDFAtual) URL.revokeObjectURL(urlPDFAtual);
+      urlPDFAtual = URL.createObjectURL(blob);
+      const baixar = document.getElementById("btnBaixarPDF");
+      baixar.href = urlPDFAtual;
+      baixar.download = `Relatorio_${String(numero).padStart(4, "0")}.pdf`;
+
+      const dialog = document.getElementById("pdfDialog");
+      if (typeof dialog.showModal !== "function") {
+        baixar.click();
+        return;
+      }
+      dialog.showModal();
+      await renderizarPaginasPDF(blob);
+    }
+
+    function fecharPreviaPDF() {
+      const dialog = document.getElementById("pdfDialog");
+      if (dialog.open) dialog.close();
+      document.getElementById("pdfPreviewPages").replaceChildren();
+      if (urlPDFAtual) {
+        URL.revokeObjectURL(urlPDFAtual);
+        urlPDFAtual = null;
+      }
+    }
+
+    document.getElementById("btnFecharPDF").addEventListener("click", fecharPreviaPDF);
+    document.getElementById("btnFecharPDFRodape").addEventListener("click", fecharPreviaPDF);
+
     document.getElementById("btnPDF").onclick = async () => {
-      const blob = await gerarPDF();
-      window.open(URL.createObjectURL(blob));
+      const dados = await montarDados();
+      if (!dados) return;
+      mostrarCarregando(true);
+      try {
+        const blob
+        = await gerarPDF(dados);
+        await abrirPreviaPDF(blob, dados.id);
+      } catch (erro) {
+        console.error("Erro ao gerar PDF", erro);
+        mostrarAlerta("Não foi possível abrir a prévia do PDF. Tente baixar o arquivo.", "danger");
+      }
+      mostrarCarregando(false);
     };
 
-    document.getElementById("btnWhatsapp").onclick = async () => {
-      if (!hasSignature) { alert("Assine antes de compartilhar."); return; }
-      const loading = document.getElementById("loadingOverlay");
-      loading.classList.add("show");
+    let urlWhatsAppPDFAtual = null;
+    let arquivoWhatsAppAtual = null;
+    let dadosWhatsAppAtual = null;
+    let pdfWhatsAppAtual = null;
+
+    async function compartilharPDFAtual() {
+      await navigator.share({
+        files: [arquivoWhatsAppAtual],
+        title: `Relatório Tecnomed nº ${String(dadosWhatsAppAtual.id).padStart(4, "0")}`,
+        text: `Relatório Tecnomed nº ${String(dadosWhatsAppAtual.id).padStart(4, "0")} - ${dadosWhatsAppAtual.cliente}`
+      });
+      mostrarAlerta(
+        "✅ O PDF foi compartilhado. No WhatsApp, confira a conversa e toque em Enviar para concluir; a confirmação da entrega aparece no próprio WhatsApp.",
+        "success",
+        12000
+      );
       try {
-        const blob = await gerarPDF();
-        const file = new File([blob], `Relatorio_${contador}.pdf`, { type: "application/pdf" });
-        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({ files: [file], title: 'Relatório Tecnomed' });
-        } else {
-          const a = document.createElement('a');
-          a.href = URL.createObjectURL(blob);
-          a.download = `Relatorio_${contador}.pdf`;
-          a.click();
+        await gravarHistoricoRelatorio(dadosWhatsAppAtual, "Compartilhado pelo menu do celular", pdfWhatsAppAtual);
+      } catch (erro) {
+        console.error("O PDF foi compartilhado, mas não foi possível atualizar o histórico local", erro);
+        mostrarAlerta("O PDF foi compartilhado, mas o histórico local não pôde ser atualizado.", "warning");
+      }
+    }
+
+    document.getElementById("btnWhatsApp").addEventListener("click", async () => {
+      let dados;
+      try {
+        dados = await montarDados(true);
+      } catch (erro) {
+        console.error("Não foi possível reservar um número para compartilhar", erro);
+        mostrarAlerta("Não foi possível reservar um número para o relatório.", "danger");
+        return;
+      }
+      if (!dados) return;
+
+      mostrarCarregando(true);
+      try {
+        const blob = await gerarPDF(dados);
+        const nomeArquivo = `Relatorio_${String(dados.id).padStart(4, "0")}.pdf`;
+        arquivoWhatsAppAtual = typeof File === "function"
+          ? new File([blob], nomeArquivo, { type: "application/pdf" })
+          : null;
+        dadosWhatsAppAtual = dados;
+        pdfWhatsAppAtual = blob;
+        let compartilhamentoNativoDisponivel = false;
+        if (arquivoWhatsAppAtual && navigator.share && typeof navigator.canShare === "function") {
+          try {
+            compartilhamentoNativoDisponivel = navigator.canShare({ files: [arquivoWhatsAppAtual] });
+          } catch (erro) {
+            console.warn("O navegador recusou a verificação de compartilhamento de arquivos; será usado o download.", erro);
+          }
         }
-      } catch (err) { } finally { loading.classList.remove("show"); }
-    };
+
+        if (urlWhatsAppPDFAtual) URL.revokeObjectURL(urlWhatsAppPDFAtual);
+        urlWhatsAppPDFAtual = URL.createObjectURL(blob);
+        const linkDownload = document.getElementById("btnBaixarWhatsAppPDF");
+        linkDownload.href = urlWhatsAppPDFAtual;
+        linkDownload.download = nomeArquivo;
+        document.getElementById("btnCompartilharWhatsApp").hidden = !compartilhamentoNativoDisponivel;
+        document.getElementById("mensagemWhatsAppAjuda").textContent = compartilhamentoNativoDisponivel
+          ? "O menu de compartilhamento será aberto automaticamente. Escolha WhatsApp e toque em Enviar. Se preferir, você também pode baixar o PDF."
+          : "O envio direto de arquivos não está disponível neste navegador. Baixe o PDF e anexe-o manualmente na conversa do WhatsApp. Nenhuma mensagem será enviada automaticamente.";
+        await gravarHistoricoRelatorio(dados, "PDF preparado para WhatsApp", blob);
+
+        if (compartilhamentoNativoDisponivel) {
+          mostrarCarregando(false);
+          try {
+            await compartilharPDFAtual();
+            return;
+          } catch (erro) {
+            if (erro.name === "AbortError") {
+              mostrarAlerta("Compartilhamento cancelado. Nenhum envio foi confirmado; o PDF continua disponível para baixar.", "info");
+            } else {
+              console.warn("Não foi possível abrir o compartilhamento direto; exibindo as opções do PDF.", erro);
+              document.getElementById("mensagemWhatsAppAjuda").textContent =
+                "Não foi possível abrir o compartilhamento direto. Tente Compartilhar PDF ou baixe o arquivo para anexá-lo no WhatsApp.";
+            }
+          }
+        }
+
+        document.getElementById("whatsAppDialog").showModal();
+      } catch (erro) {
+        if (erro.name === "AbortError") return;
+        console.error("Não foi possível preparar o compartilhamento", erro);
+        mostrarAlerta("Não foi possível preparar o PDF para compartilhar.", "danger");
+      } finally {
+        mostrarCarregando(false);
+      }
+    });
+
+    document.getElementById("btnCompartilharWhatsApp").addEventListener("click", async () => {
+      if (!arquivoWhatsAppAtual || !navigator.share) return;
+      try {
+        await compartilharPDFAtual();
+      } catch (erro) {
+        if (erro.name === "AbortError") {
+          mostrarAlerta("Compartilhamento cancelado. Nenhum envio foi confirmado.", "info");
+        } else {
+          console.error("Não foi possível compartilhar o PDF", erro);
+          mostrarAlerta("Falha ao abrir o compartilhamento. Baixe o PDF e anexe-o no WhatsApp.", "warning");
+        }
+      }
+    });
+
+    document.getElementById("btnFecharWhatsApp").addEventListener("click", () => {
+      document.getElementById("whatsAppDialog").close();
+      if (urlWhatsAppPDFAtual) {
+        URL.revokeObjectURL(urlWhatsAppPDFAtual);
+        urlWhatsAppPDFAtual = null;
+      }
+      arquivoWhatsAppAtual = null;
+      dadosWhatsAppAtual = null;
+      pdfWhatsAppAtual = null;
+    });
 
     document.getElementById("btnEnviar").onclick = async () => {
-      if (!document.getElementById("formRel").checkValidity()) { document.getElementById("formRel").reportValidity(); return; }
-      if (!hasSignature) { alert("Assinatura obrigatória"); return; }
-
-      const loading = document.getElementById("loadingOverlay");
-      loading.classList.add("show");
-
+      let dados;
       try {
-        const formData = new FormData();
-        const inputs = document.querySelectorAll("input, textarea, select");
-        inputs.forEach(el => { if (el.id && el.id !== "fotos") formData.append(el.id, el.value); });
+        dados = await montarDados(true);
+      } catch (erro) {
+        console.error("Não foi possível reservar o número do relatório", erro);
+        mostrarAlerta("❌ Não foi possível reservar um número para o relatório. Tente novamente.", "danger");
+        return;
+      }
+      if (!dados) return;
+      let pdfBlob = null;
 
-        const pdfBlob = await gerarPDF();
-        formData.append("relatorio", pdfBlob, `Relatorio_${contador}.pdf`);
-
-        const res = await fetch(SERVER_URL, { method: "POST", body: formData });
-        if (!res.ok) throw new Error("Erro no servidor");
-
-        alert("Sucesso! Relatório enviado agora.");
-        localStorage.removeItem(storageKey);
-        localStorage.removeItem("tecnomed_form_backup");
-        document.getElementById("formRel").reset();
-        location.reload();
-      } catch (err) {
-        if (!navigator.onLine || err.message === 'Failed to fetch' || err.message === 'NetworkError when attempting to fetch resource.') {
-          alert("Sem conexão com a internet! Conecte-se a uma rede para enviar o relatório ao sistema, ou utilize a opção 'WhatsApp' para enviar o PDF gerado diretamente ao cliente.");
-        } else {
-          alert("Erro no envio: " + err.message);
+      if (!navigator.onLine) {
+        try {
+          pdfBlob = await gerarPDF(dados);
+          await salvarRelatorioOffline(dados, pdfBlob);
+          await removerRascunhoDoAparelho();
+          mostrarAlerta("📴 Relatório salvo neste celular. Será enviado quando a conexão voltar.", "warning");
+          setTimeout(() => location.reload(), 2000);
+        } catch (erro) {
+          console.error("Não foi possível salvar o relatório offline", erro);
+          mostrarAlerta("❌ Falha ao salvar no celular. O rascunho foi mantido na tela.", "danger");
         }
-      } finally { loading.classList.remove("show"); }
+        return;
+      }
+
+      mostrarCarregando(true);
+      try {
+        pdfBlob = await gerarPDF(dados);
+        const fd = new FormData();
+        fd.append("file", pdfBlob, `Relatorio_${String(dados.id).padStart(4, "0")}.pdf`);
+        fd.append("metadata", JSON.stringify({ ...dados, fotos: [] }));
+        await anexarFotosFormulario(fd, dados.fotos);
+
+        if (tamanhoFormularioBytes(fd) > MAX_UPLOAD_BYTES) {
+          const erroTamanho = new Error("O PDF e as fotos excedem o limite de 4 MB aceito pelo servidor. Reduza os anexos e tente novamente.");
+          erroTamanho.code = "UPLOAD_TOO_LARGE";
+          throw erroTamanho;
+        }
+
+        const token = await obterTokenAcesso();
+        const cabecalhos = token ? { Authorization: `Bearer ${token}` } : {};
+        const resposta = await fetch(SERVER_URL, { method: "POST", body: fd, headers: cabecalhos });
+        const resultadoEnvio = await resposta.json().catch(() => ({}));
+        if (!resposta.ok || resultadoEnvio.accepted !== true) {
+          const erroEnvio = new Error(resultadoEnvio.error || "O servidor não confirmou a entrega ao SMTP.");
+          erroEnvio.status = resposta.status;
+          erroEnvio.code = resposta.status === 401 ? "AUTH_INVALID"
+            : resposta.status === 503 && /código de acesso/i.test(erroEnvio.message) ? "AUTH_CONFIG"
+              : resposta.status === 413 ? "UPLOAD_TOO_LARGE" : "";
+          if (erroEnvio.code === "AUTH_INVALID") localStorage.removeItem(ACCESS_TOKEN_KEY);
+          throw erroEnvio;
+        }
+
+        await gravarHistoricoRelatorio(dados, "Enviado", pdfBlob);
+        await removerRascunhoDoAparelho();
+        mostrarAlerta(
+          `✅ O servidor de e-mail confirmou o recebimento do Relatório ${String(dados.id).padStart(4, "0")} para envio a ${dados.emailCliente}.`,
+          "success",
+          9000
+        );
+        setTimeout(() => location.reload(), 10000);
+      } catch (erro) {
+        if (erro.code === "ACCESS_CANCELLED") return;
+        if (["AUTH_INVALID", "AUTH_CONFIG", "AUTH_RATE_LIMIT", "AUTH_FAILED", "UPLOAD_TOO_LARGE"].includes(erro.code)) {
+          mostrarAlerta(`❌ ${erro.message}`, "danger", 9000);
+          return;
+        }
+        console.error("Falha no envio; tentando guardar o relatório localmente", erro);
+        try {
+          await salvarRelatorioOffline(dados, pdfBlob);
+          await removerRascunhoDoAparelho();
+          const motivo = erro.status === 503 || erro.status === 502
+            ? `E-mail não enviado: ${erro.message}.`
+            : "Sem conexão com o servidor de envio.";
+          mostrarAlerta(`📴 ${motivo} O PDF foi salvo neste celular e ficará pendente.`, "warning");
+          setTimeout(() => location.reload(), 2000);
+        } catch (erroAoSalvar) {
+          console.error("Não foi possível guardar o relatório offline", erroAoSalvar);
+          mostrarAlerta("❌ O envio falhou e não foi possível salvar. Mantenha esta tela aberta e tente novamente.", "danger");
+        }
+      } finally {
+        mostrarCarregando(false);
+      }
     };
 
-  </script>
-</body>
+    // Dica inicial
+    setTimeout(() => {
+      mostrarAlerta("📜 Preencha os campos e role até o final para adicionar fotos e assinar com o dedo!", "info");
+    }, 1500);
+    // ===============================
+// OFFLINE STORAGE (LOCAL)
+// ===============================
 
+async function salvarRelatorioOffline(dados, pdfBlob = null) {
+  if (!relatorioTemAssinaturasValidas(dados)) {
+    throw new Error("Não é possível salvar um relatório sem as duas assinaturas.");
+  }
+  const pdf = pdfBlob || await gerarPDF(dados);
+  await gravarRegistroLocal("filaOffline", {
+    id: dados.id,
+    dados,
+    pdf,
+    criadoEm: Date.now()
+  });
+  await gravarHistoricoRelatorio(dados, "Pendente de envio", pdf);
+}
+
+async function migrarFilaOfflineAntiga() {
+  const conteudoAntigo = localStorage.getItem("filaOffline");
+  if (!conteudoAntigo) return;
+
+  let filaAntiga;
+  try {
+    filaAntiga = JSON.parse(conteudoAntigo);
+  } catch (erro) {
+    console.error("A fila offline antiga não contém JSON válido; foi mantida no aparelho.", erro);
+    return;
+  }
+  if (!Array.isArray(filaAntiga)) return;
+
+  const filaAtual = await listarRegistrosLocais("filaOffline");
+  const idsExistentes = new Set(filaAtual.map(registro => String(registro.id)));
+  for (const registro of filaAtual) {
+    await gravarHistoricoRelatorio(registro.dados || registro, "Pendente de envio");
+  }
+  for (const [indice, dados] of filaAntiga.entries()) {
+    const id = dados.id ?? `legado-${Date.now()}-${indice}`;
+    if (idsExistentes.has(String(id))) continue;
+    await gravarRegistroLocal("filaOffline", { id, dados, criadoEm: Date.now() });
+    await gravarHistoricoRelatorio(dados, "Pendente de envio");
+    idsExistentes.add(String(id));
+  }
+  localStorage.removeItem("filaOffline");
+}
+
+let enviandoFilaOffline = false;
+async function enviarRelatoriosPendentes() {
+  if (!navigator.onLine || enviandoFilaOffline) return;
+  enviandoFilaOffline = true;
+
+  try {
+    await migrarFilaOfflineAntiga();
+    const fila = await listarRegistrosLocais("filaOffline");
+    if (!fila.length) return;
+
+    const validos = fila.filter(registro => relatorioTemAssinaturasValidas(registro.dados || registro));
+    const invalidos = fila.length - validos.length;
+    if (invalidos) {
+      mostrarAlerta(`${invalidos} relatório(s) sem as duas assinaturas foram mantidos no aparelho e não serão enviados.`, "warning");
+    }
+    if (!validos.length) return;
+
+    let token = null;
+    try {
+      token = await obterTokenAcesso();
+    } catch (erro) {
+      if (erro.code === "ACCESS_CANCELLED") return;
+      if (["AUTH_INVALID", "AUTH_CONFIG", "AUTH_RATE_LIMIT", "AUTH_FAILED"].includes(erro.code)) {
+        mostrarAlerta(`Não foi possível autenticar para enviar os relatórios: ${erro.message}`, "danger", 9000);
+        return;
+      }
+      throw erro;
+    }
+
+    mostrarAlerta(`📡 Internet voltou. Enviando ${validos.length} relatório(s)...`, "info");
+    for (const registro of validos) {
+      const dados = registro.dados || registro;
+      const pdfBlob = registro.pdf || await gerarPDF(dados);
+      const fd = new FormData();
+      fd.append("file", pdfBlob, `Relatorio_${String(dados.id).padStart(4, "0")}.pdf`);
+      fd.append("metadata", JSON.stringify({ ...dados, fotos: [] }));
+
+      await anexarFotosFormulario(fd, dados.fotos);
+
+      if (tamanhoFormularioBytes(fd) > MAX_UPLOAD_BYTES) {
+        throw new Error(`O relatório ${String(dados.id).padStart(4, "0")} excede o limite de 4 MB e continua salvo neste aparelho.`);
+      }
+
+      const cabecalhos = token ? { Authorization: `Bearer ${token}` } : {};
+      const resposta = await fetch(SERVER_URL, { method: "POST", body: fd, headers: cabecalhos });
+      const resultadoEnvio = await resposta.json().catch(() => ({}));
+      if (!resposta.ok || resultadoEnvio.accepted !== true) {
+        const erroEnvio = new Error(resultadoEnvio.error || "O servidor não confirmou o envio do relatório pendente.");
+        if (resposta.status === 401) localStorage.removeItem(ACCESS_TOKEN_KEY);
+        if (resposta.status === 401 || resposta.status === 429 ||
+            (resposta.status === 503 && /código de acesso/i.test(erroEnvio.message))) {
+          mostrarAlerta(`Não foi possível autenticar para enviar os relatórios: ${erroEnvio.message}`, "danger", 9000);
+          return;
+        }
+        throw erroEnvio;
+      }
+      await gravarHistoricoRelatorio(dados, "Enviado", pdfBlob);
+      await apagarRegistroLocal("filaOffline", registro.id);
+    }
+
+    if (!invalidos) mostrarAlerta("✅ Relatórios offline enviados com sucesso!", "success");
+  } catch (erro) {
+    console.error("Erro ao reenviar relatórios offline", erro);
+    mostrarAlerta("Não foi possível enviar todos os relatórios pendentes. Eles continuam salvos neste aparelho.", "warning");
+  } finally {
+    enviandoFilaOffline = false;
+  }
+}
+
+function numeroFormatado(numero) {
+  return String(numero).padStart(4, "0");
+}
+
+async function buscarRelatoriosLocais() {
+  const data = document.getElementById("buscaData").value;
+  const cliente = document.getElementById("buscaCliente").value.trim().toLocaleLowerCase("pt-BR");
+  const tipoServico = document.getElementById("buscaTipoServico").value;
+  const numeroBusca = document.getElementById("buscaNumero").value.trim().replace(/\D/g, "");
+  const numeroNormalizado = numeroBusca ? String(Number(numeroBusca)) : "";
+  const tbody = document.getElementById("resultadosRelatorios");
+  const mensagem = document.getElementById("mensagemBusca");
+
+  try {
+    const registros = await listarRegistrosLocais("relatorios");
+    const resultados = registros
+      .filter(registro => {
+        const dados = registro.dados || registro;
+        const clienteDoRegistro = String(dados.cliente || "").toLocaleLowerCase("pt-BR");
+        const numeroDoRegistro = String(Number(dados.id));
+        return (!data || dados.data === data) &&
+          (!cliente || clienteDoRegistro.includes(cliente)) &&
+          (!tipoServico || dados.tipoServico === tipoServico) &&
+          (!numeroNormalizado || numeroDoRegistro === numeroNormalizado);
+      })
+      .sort((a, b) => Number((b.dados || b).id) - Number((a.dados || a).id));
+
+    tbody.replaceChildren();
+    resultados.forEach(registro => {
+      const dados = registro.dados || registro;
+      const linha = document.createElement("tr");
+      [numeroFormatado(dados.id), dados.data || "-", dados.cliente || "-", dados.tipoServico || "-", registro.status || "Pendente de envio"]
+        .forEach(valor => {
+          const celula = document.createElement("td");
+          celula.textContent = valor;
+          linha.appendChild(celula);
+        });
+
+      const celulaAcao = document.createElement("td");
+      const botaoPDF = document.createElement("button");
+      botaoPDF.type = "button";
+      botaoPDF.className = "btn btn-sm btn-outline-primary";
+      botaoPDF.textContent = "Baixar PDF";
+      botaoPDF.addEventListener("click", async () => {
+        try {
+          const pdfBlob = registro.pdf || await gerarPDF(dados);
+          const link = document.createElement("a");
+          const url = URL.createObjectURL(pdfBlob);
+          link.href = url;
+          link.download = `Relatorio_${numeroFormatado(dados.id)}.pdf`;
+          link.click();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        } catch (erro) {
+          console.error("Não foi possível gerar o PDF do histórico", erro);
+          mostrarAlerta("Não foi possível gerar o PDF deste relatório.", "danger");
+        }
+      });
+      celulaAcao.appendChild(botaoPDF);
+      linha.appendChild(celulaAcao);
+      tbody.appendChild(linha);
+    });
+
+    mensagem.textContent = resultados.length
+      ? `${resultados.length} relatório(s) encontrado(s) neste celular.`
+      : "Nenhum relatório encontrado neste celular.";
+  } catch (erro) {
+    console.error("Erro ao buscar relatórios locais", erro);
+    mensagem.textContent = "Não foi possível acessar o histórico deste celular.";
+  }
+}
+
+document.getElementById("btnBuscarRelatorios").addEventListener("click", buscarRelatoriosLocais);
+document.getElementById("btnLimparBusca").addEventListener("click", () => {
+  ["buscaData", "buscaCliente", "buscaTipoServico", "buscaNumero"].forEach(id => {
+    document.getElementById(id).value = "";
+  });
+  buscarRelatoriosLocais();
+});
+["buscaData", "buscaCliente", "buscaTipoServico", "buscaNumero"].forEach(id => {
+  document.getElementById(id).addEventListener("keydown", event => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      buscarRelatoriosLocais();
+    }
+  });
+});
+buscarRelatoriosLocais();
+
+function atualizarConexao() {
+  atualizarStatusConexao();
+  if (navigator.onLine) enviarRelatoriosPendentes();
+}
+
+window.addEventListener("online", atualizarConexao);
+window.addEventListener("offline", atualizarConexao);
+
+async function iniciarModoOffline() {
+  atualizarStatusConexao();
+  try {
+    if (navigator.storage?.persist) await navigator.storage.persist();
+    await abrirBancoLocal();
+    await migrarFilaOfflineAntiga();
+    const restaurou = await restaurarRascunhoDoAparelho();
+    if (!restaurou) atualizarStatusConexao();
+    if (navigator.onLine) await enviarRelatoriosPendentes();
+  } catch (erro) {
+    console.error("O armazenamento offline não pôde ser inicializado", erro);
+    atualizarStatusConexao("Armazenamento local indisponível");
+  }
+}
+
+iniciarModoOffline();
+
+let eventoInstalacaoPendente = null;
+const botaoInstalarApp = document.getElementById("btnInstalarApp");
+window.addEventListener("beforeinstallprompt", evento => {
+  evento.preventDefault();
+  eventoInstalacaoPendente = evento;
+  botaoInstalarApp.hidden = false;
+});
+botaoInstalarApp.addEventListener("click", async () => {
+  if (!eventoInstalacaoPendente) return;
+  eventoInstalacaoPendente.prompt();
+  await eventoInstalacaoPendente.userChoice;
+  eventoInstalacaoPendente = null;
+  botaoInstalarApp.hidden = true;
+});
+
+if (window.matchMedia("(display-mode: standalone)").matches) {
+  botaoInstalarApp.hidden = true;
+}
+  </script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", async () => {
+        try {
+          const registration = await navigator.serviceWorker.register("./service-worker.js");
+          await registration.update();
+          console.log("Service Worker offline registrado");
+        } catch (err) {
+          console.error("Não foi possível registrar o Service Worker", err);
+        }
+      });
+    }
+  </script>
+
+</body>
 </html>

@@ -1,32 +1,30 @@
-PASSO A PASSO PARA CONFIGURAR O ENVIO DE EMAIL (GMAIL)
+CONFIGURACAO DO ENVIO DE RELATORIOS NA VERCEL
 
-1. Você precisa de uma Senha de Aplicativo (App Password) do Google. Sua senha normal NÃO vai funcionar.
+Antes de publicar, abra o projeto tecnomed-web na Vercel e acesse:
+Settings > Environment Variables.
 
-COMO GERAR A SENHA DE APLICATIVO:
-1. Acesse sua conta Google m)(myaccount.google.com.
-2. Vá em "Segurança".
-3. Ative a "Verificação em duas etapas" (se não estiver ativa).
-4. Procure por "Senhas de app" (pode usar a barra de busca no topo).
-5. Crie uma nova senha (dê o nome "Tecnomed", por exemplo).
-6. O Google vai te dar uma senha de 16 letras. COPIE ESSA SENHA.
+Cadastre as variaveis abaixo nos ambientes Production e Preview:
 
-CONFIGURAR NO CÓDIGO:
-1. Abra o arquivo "server.js" na pasta tecnomed-web.
-2. Procure as linhas 28 a 35 (Configuração do Nodemailer).
-3. Onde está escrito 'seu_email@gmail.com', apague e coloque O SEU EMAIL REAL.
-4. Onde está escrito 'sua_senha_de_app', apague e coloque A SENHA DE 16 LETRAS que você copiou.
+APP_ACCESS_CODE       Codigo compartilhado com a equipe, com pelo menos 20 caracteres.
+SMTP_HOST             Servidor SMTP (por exemplo, smtp.gmail.com).
+SMTP_PORT             Porta SMTP (587 para STARTTLS ou 465 para TLS).
+SMTP_SECURE           false para 587; true para 465.
+SMTP_USER             Conta de e-mail usada para enviar os relatorios.
+SMTP_PASS             Senha de aplicativo da conta de e-mail.
+SMTP_FROM             Remetente autorizado; pode ser igual a SMTP_USER.
+SMTP_FROM_NAME        Nome exibido como remetente (por exemplo, Tecnomed).
+REPORT_COPY_TO        E-mail da Tecnomed que deve receber a copia.
 
-Exemplo de como deve ficar:
+Seguranca:
+- Gere um codigo de acesso exclusivo, com pelo menos 20 caracteres.
+- Nao envie o codigo, a senha SMTP ou valores secretos pelo chat.
+- Nao coloque segredos em arquivos do repositorio, no HTML ou no JavaScript.
+- Compartilhe o codigo de acesso apenas com pessoas autorizadas.
+- Depois de alterar variaveis, faca um novo deploy para aplicar os valores.
 
-    auth: {
-        user: 'joao.tecnico@gmail.com',
-        pass: 'abcd efgh ijkl mnop'
-    }
+O formulario pede o codigo antes do primeiro envio e guarda um token temporario
+no aparelho. Relatorios podem ser salvos offline sem autenticar; a autenticacao
+sera solicitada quando o aparelho voltar a ficar online.
 
-5. Salve o arquivo (Ctrl + S).
-6. Reinicie o servidor:
-   - No terminal, aperte Ctrl + C para parar.
-   - Digite: node server.js
-   - Aperte Enter.
-
-7. Tente enviar o relatório novamente pelo site.
+O servidor aceita ate 4 MB por envio (PDF e fotos juntos). Arquivos maiores
+precisam ter as fotos reduzidas antes do envio.
