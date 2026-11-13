@@ -381,6 +381,7 @@
         <div class="col-12">
           <label>Fotos (opcional - toque para adicionar)</label>
           <input type="file" id="fotos" class="form-control" multiple accept="image/*">
+          <div class="form-text">As fotos são reduzidas automaticamente para facilitar o envio pelo celular.</div>
           <div class="fotos-preview d-flex flex-wrap mt-3" id="fotosPreview"></div>
         </div>
 
@@ -481,7 +482,7 @@
       "/api/auth",
       window.location.protocol === "file:" ? "http://localhost:3000" : window.location.origin
     ).toString();
-    const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
+    const MAX_UPLOAD_BYTES = 3.5 * 1024 * 1024;
     let resolverCodigoAcesso = null;
 
     document.getElementById("accessCodeForm").addEventListener("submit", event => {
@@ -985,13 +986,69 @@
       return fotosRascunhoSalvas;
     }
 
+    const MAX_COMPRESSED_PHOTO_BYTES = 300 * 1024;
+
+    function carregarImagemParaCompressao(blob, indice) {
+      return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(blob);
+        const imagem = new Image();
+        imagem.onload = () => {
+          URL.revokeObjectURL(url);
+          resolve(imagem);
+        };
+        imagem.onerror = () => {
+          URL.revokeObjectURL(url);
+          const erro = new Error(`Não foi possível processar a foto ${indice + 1}. Tente salvá-la como JPG e adicioná-la novamente.`);
+          erro.code = "PHOTO_COMPRESSION_FAILED";
+          reject(erro);
+        };
+        imagem.src = url;
+      });
+    }
+
+    async function comprimirFoto(blob, indice) {
+      const imagem = await carregarImagemParaCompressao(blob, indice);
+      const canvas = document.createElement("canvas");
+      const contexto = canvas.getContext("2d");
+      if (!contexto) {
+        const erro = new Error(`Não foi possível comprimir a foto ${indice + 1} neste navegador.`);
+        erro.code = "PHOTO_COMPRESSION_FAILED";
+        throw erro;
+      }
+
+      let ultimaFotoComprimida = null;
+      for (const dimensaoMaxima of [1600, 1280, 1024, 800]) {
+        const escala = Math.min(1, dimensaoMaxima / Math.max(imagem.naturalWidth, imagem.naturalHeight));
+        canvas.width = Math.max(1, Math.round(imagem.naturalWidth * escala));
+        canvas.height = Math.max(1, Math.round(imagem.naturalHeight * escala));
+        contexto.fillStyle = "#fff";
+        contexto.fillRect(0, 0, canvas.width, canvas.height);
+        contexto.drawImage(imagem, 0, 0, canvas.width, canvas.height);
+
+        for (const qualidade of [0.78, 0.68, 0.58, 0.48]) {
+          const fotoComprimida = await new Promise(resolve => {
+            canvas.toBlob(resolve, "image/jpeg", qualidade);
+          });
+          if (!fotoComprimida) {
+            const erro = new Error(`Não foi possível comprimir a foto ${indice + 1} neste navegador.`);
+            erro.code = "PHOTO_COMPRESSION_FAILED";
+            throw erro;
+          }
+          ultimaFotoComprimida = fotoComprimida;
+          if (fotoComprimida.size <= MAX_COMPRESSED_PHOTO_BYTES) return fotoComprimida;
+        }
+      }
+
+      return ultimaFotoComprimida;
+    }
+
     async function anexarFotosFormulario(formData, fotos) {
       for (const [indice, fotoDataUrl] of (fotos || []).entries()) {
         const resposta = await fetch(fotoDataUrl);
         const fotoBlob = await resposta.blob();
         if (!fotoBlob.type.startsWith("image/")) continue;
-        const extensao = fotoBlob.type.split("/")[1] || "jpg";
-        formData.append(`foto_${indice}`, fotoBlob, `foto_${indice}.${extensao}`);
+        const fotoComprimida = await comprimirFoto(fotoBlob, indice);
+        formData.append(`foto_${indice}`, fotoComprimida, `foto_${indice}.jpg`);
       }
     }
 
@@ -1607,7 +1664,7 @@
         await anexarFotosFormulario(fd, dados.fotos);
 
         if (tamanhoFormularioBytes(fd) > MAX_UPLOAD_BYTES) {
-          const erroTamanho = new Error("O PDF e as fotos excedem o limite de 4 MB aceito pelo servidor. Reduza os anexos e tente novamente.");
+          const erroTamanho = new Error("O PDF e as fotos excedem o limite seguro de 3,5 MB para a Vercel. Remova algumas fotos e tente novamente.");
           erroTamanho.code = "UPLOAD_TOO_LARGE";
           throw erroTamanho;
         }
@@ -1636,7 +1693,7 @@
         setTimeout(() => location.reload(), 10000);
       } catch (erro) {
         if (erro.code === "ACCESS_CANCELLED") return;
-        if (["AUTH_INVALID", "AUTH_CONFIG", "AUTH_RATE_LIMIT", "AUTH_FAILED", "UPLOAD_TOO_LARGE"].includes(erro.code)) {
+        if (["AUTH_INVALID", "AUTH_CONFIG", "AUTH_RATE_LIMIT", "AUTH_FAILED", "UPLOAD_TOO_LARGE", "PHOTO_COMPRESSION_FAILED"].includes(erro.code)) {
           mostrarAlerta(`❌ ${erro.message}`, "danger", 9000);
           return;
         }
@@ -1748,7 +1805,9 @@ async function enviarRelatoriosPendentes() {
       await anexarFotosFormulario(fd, dados.fotos);
 
       if (tamanhoFormularioBytes(fd) > MAX_UPLOAD_BYTES) {
-        throw new Error(`O relatório ${String(dados.id).padStart(4, "0")} excede o limite de 4 MB e continua salvo neste aparelho.`);
+        const erroTamanho = new Error(`O relatório ${String(dados.id).padStart(4, "0")} excede o limite seguro de 3,5 MB e continua salvo neste aparelho.`);
+        erroTamanho.code = "UPLOAD_TOO_LARGE";
+        throw erroTamanho;
       }
 
       const cabecalhos = token ? { Authorization: `Bearer ${token}` } : {};
@@ -1771,7 +1830,10 @@ async function enviarRelatoriosPendentes() {
     if (!invalidos) mostrarAlerta("✅ Relatórios offline enviados com sucesso!", "success");
   } catch (erro) {
     console.error("Erro ao reenviar relatórios offline", erro);
-    mostrarAlerta("Não foi possível enviar todos os relatórios pendentes. Eles continuam salvos neste aparelho.", "warning");
+    const mensagem = erro.code === "UPLOAD_TOO_LARGE" || erro.code === "PHOTO_COMPRESSION_FAILED"
+      ? `${erro.message} Os relatórios pendentes continuam salvos neste aparelho.`
+      : "Não foi possível enviar todos os relatórios pendentes. Eles continuam salvos neste aparelho.";
+    mostrarAlerta(mensagem, "warning", 15000);
   } finally {
     enviandoFilaOffline = false;
   }
