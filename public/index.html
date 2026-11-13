@@ -534,6 +534,25 @@
     async function obterTokenAcesso() {
       if (SERVIDOR_LOCAL) return null;
 
+      let respostaConfiguracao;
+      try {
+        respostaConfiguracao = await fetch(ACCESS_AUTH_URL, { method: "GET", cache: "no-store" });
+      } catch (erro) {
+        erro.code = "AUTH_NETWORK";
+        throw erro;
+      }
+
+      const configuracao = await respostaConfiguracao.json().catch(() => ({}));
+      if (!respostaConfiguracao.ok || typeof configuracao.requiresCode !== "boolean") {
+        const erro = new Error(configuracao.error || "Não foi possível verificar a configuração de acesso.");
+        erro.code = respostaConfiguracao.status === 503 ? "AUTH_CONFIG" : "AUTH_FAILED";
+        throw erro;
+      }
+      if (!configuracao.requiresCode) {
+        localStorage.removeItem(ACCESS_TOKEN_KEY);
+        return null;
+      }
+
       const tokenSalvo = localStorage.getItem(ACCESS_TOKEN_KEY);
       if (tokenSalvo && accessTokenValido(tokenSalvo)) return tokenSalvo;
       localStorage.removeItem(ACCESS_TOKEN_KEY);

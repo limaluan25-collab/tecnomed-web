@@ -12,6 +12,7 @@ const PORT = process.env.PORT || 3000;
 const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 const ACCESS_TOKEN_TTL_SECONDS = 30 * 24 * 60 * 60;
 const ACCESS_CODE = process.env.APP_ACCESS_CODE || '';
+const ACCESS_CODE_REQUIRED = process.env.VERCEL_ENV === 'production';
 const SMTP_HOST = process.env.SMTP_HOST || 'smtp.gmail.com';
 const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
 const SMTP_SECURE = String(process.env.SMTP_SECURE).toLowerCase() === 'true';
@@ -86,6 +87,7 @@ function tokenAcessoValido(token) {
 }
 
 function exigirAcesso(req, res, next) {
+    if (!ACCESS_CODE_REQUIRED) return next();
     if (!codigoConfigurado()) {
         return res.status(503).json({
             accepted: false,
@@ -180,6 +182,11 @@ app.get('/api/counter', async (req, res) => {
         console.error('Erro ao gerar contador:', error);
         return res.status(503).json({ error: 'Não foi possível reservar o número do relatório.' });
     }
+});
+
+app.get('/api/auth', (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    return res.json({ requiresCode: ACCESS_CODE_REQUIRED });
 });
 
 app.post('/api/auth', (req, res) => {
